@@ -2,7 +2,7 @@
 > **Proyecto Final / Tesis de Grado**  
 > Módulo Principal: **Gestión de Producción y Trazabilidad Industrial (Agrifood Argentina S.A.)**
 
-## 📌 Alcance de la Demo
+## Alcance de la Demo
 Implementación funcional del ciclo transaccional completo de manufactura alimenticia bajo normativas bromatológicas (CAA):
 1. **CU-P01:** Planificación de Orden de Producción y cálculo dinámico de receta.
 2. **CU-P02:** Ejecución en planta, imputación de insumos y generación de lote en cuarentena.
@@ -15,7 +15,7 @@ Implementación funcional del ciclo transaccional completo de manufactura alimen
 - **Frontend:** React + Vite + Tailwind CSS
 - **Arquitectura:** Monorepo con separación estricta de capas (API REST transaccional).
 
-## 🚀 Puesta en Marcha Local
+## Puesta en Marcha Local
 ```bash
 # 1. Clonar e instalar
 git clone <(https://github.com/Agutzy12/sigta-produccion-demo.git)>
