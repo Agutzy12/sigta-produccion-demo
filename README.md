@@ -10,7 +10,7 @@ Implementación funcional del ciclo transaccional completo de manufactura alimen
 4. **CU-P04:** Ingreso a depósito con estiba en rack y finalización de orden.
 5. **Módulo de Auditoría:** Trazabilidad inversa del producto terminado.
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 - **Backend:** Node.js + Express (TypeScript) / ORM Prisma + SQLite
 - **Frontend:** React + Vite + Tailwind CSS
 - **Arquitectura:** Monorepo con separación estricta de capas (API REST transaccional).
