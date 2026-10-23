@@ -18,7 +18,7 @@ Implementación funcional del ciclo transaccional completo de manufactura alimen
 ## 🚀 Puesta en Marcha Local
 ```bash
 # 1. Clonar e instalar
-git clone <URL_REPO>
+git clone <(https://github.com/Agutzy12/sigta-produccion-demo.git)>
 cd sigta-produccion-demo
 
 # 2. Configurar y levantar Backend
