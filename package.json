@@ -15,7 +15,7 @@
     "test:e2e": "npm run test:e2e -w client",
     "lint": "npm run lint -w client"
   },
-  "engines": { "node": ">=20.19" },
+  "engines": { "node": ">=22.12" },
   "author": "Benitez Agustin",
   "license": "MIT"
 }

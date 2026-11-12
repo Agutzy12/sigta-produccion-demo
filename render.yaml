@@ -1,0 +1,24 @@
+# Blueprint de Render: publica SIGTA como un único servicio web (API + pantallas).
+# La base PostgreSQL va aparte (por ejemplo Neon): pegar su URL en DATABASE_URL.
+services:
+  - type: web
+    name: sigta
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm ci --include=dev && npm run build && npm run db:migrate -w server
+    startCommand: npm start
+    healthCheckPath: /api/salud
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEMO_MODE
+        value: "true"
+      - key: TZ
+        value: America/Argentina/Cordoba

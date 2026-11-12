@@ -1,0 +1,38 @@
+# Integración continua: en cada push corre las pruebas de la API, compila y recorre la demo en el navegador.
+name: Pruebas
+on:
+  push:
+  pull_request:
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sigta
+          POSTGRES_PASSWORD: sigta
+          POSTGRES_DB: sigta
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sigta" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://sigta:sigta@localhost:5432/sigta?schema=public
+      DATABASE_URL_TEST: postgresql://sigta:sigta@localhost:5432/sigta_test?schema=public
+      JWT_SECRET: clave-de-integracion-continua
+      TZ: America/Argentina/Cordoba
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: psql postgresql://sigta:sigta@localhost:5432/sigta -c "CREATE DATABASE sigta_test OWNER sigta;"
+      - run: npm ci
+      - run: npm run db:migrate -w server
+      - run: npm test
+      - run: npm run lint
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
