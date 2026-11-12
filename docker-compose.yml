@@ -1,0 +1,20 @@
+# Base de datos PostgreSQL para desarrollo:  npm run db:up
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sigta-db
+    environment:
+      POSTGRES_USER: sigta
+      POSTGRES_PASSWORD: sigta
+      POSTGRES_DB: sigta
+    ports:
+      - "5432:5432"
+    volumes:
+      - sigta-datos:/var/lib/postgresql/data
+      - ./scripts/crear-base-test.sql:/docker-entrypoint-initdb.d/crear-base-test.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigta"]
+      interval: 5s
+      retries: 10
+volumes:
+  sigta-datos:

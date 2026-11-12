@@ -1,0 +1,338 @@
+// Modelo de datos de SIGTA · Módulo de Producción y Trazabilidad
+// Cada "model" es una tabla de PostgreSQL. Los nombres de tablas y columnas
+// están en castellano y en minúscula (snake_case) para leerlos fácil desde SQL.
+// Las reglas que la base hace cumplir por sí misma (triggers y CHECK) están en
+// prisma/migrations/*_reglas_de_negocio/migration.sql
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Perfiles de usuario. Cada rol sólo puede ejecutar los casos de uso que le corresponden.
+enum Rol {
+  PRODUCCION // Supervisor de producción: CU-P01 y CU-P02
+  CALIDAD // Técnico de calidad: CU-P03
+  DEPOSITO // Operario de depósito: CU-P04 y despachos
+  DIRECCION // Gerencia: sólo consulta
+}
+
+enum TipoInsumo {
+  MP // Materia prima
+  ME // Material de empaque
+}
+
+enum EstadoPartida {
+  LIBERADO
+  CUARENTENA
+  RECHAZADO
+}
+
+/// Ciclo de vida de una Orden de Producción (OP)
+enum EstadoOP {
+  CREADA
+  PLANIFICADA
+  EN_PRODUCCION
+  EN_CONTROL_CALIDAD
+  FINALIZADA
+  RECHAZADA_SCRAP
+  CANCELADA
+}
+
+/// Estado bromatológico de un lote elaborado
+enum EstadoLote {
+  CUARENTENA
+  APROBADO_LIBERADO
+  RECHAZADO_BLOQUEADO
+}
+
+enum Dictamen {
+  APROBAR_LIBERAR
+  RECHAZAR_BLOQUEAR
+}
+
+model Usuario {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  nombre        String
+  cargo         String
+  iniciales     String
+  rol           Rol
+  password_hash String
+  activo        Boolean  @default(true)
+  creado_en     DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("usuario")
+}
+
+model Linea {
+  id        Int               @id
+  nombre    String
+  productos Producto[]
+  ordenes   OrdenProduccion[]
+
+  @@map("linea")
+}
+
+model Producto {
+  id               Int               @id
+  codigo           String            @unique // MRC01, PPN02...
+  gtin             String            @unique // código de artículo GS1 (13 dígitos)
+  nombre           String
+  linea_id         Int?
+  linea            Linea?            @relation(fields: [linea_id], references: [id])
+  presentacion_kg  Float // kg por bolsa
+  vida_util_meses  Int
+  humedad_max      Float // especificación de ejemplo para Calidad
+  ph_min           Float
+  ph_max           Float
+  ufc_max          Int
+  color_esperado   String
+  recetas          Receta[]
+  ordenes          OrdenProduccion[]
+  lotes            LoteProduccion[]
+
+  @@map("producto")
+}
+
+model Insumo {
+  id           Int             @id
+  codigo       String          @unique // MP-001, ENV-020...
+  nombre       String
+  tipo         TipoInsumo
+  unidad       String // kg, un., rollos
+  critico      Boolean         @default(true) // si falta, no se puede planificar
+  stock_minimo Float           @default(0)
+  recetas      RecetaItem[]
+  partidas     PartidaInsumo[]
+  op_items     OpItem[]
+  consumos     Consumo[]
+
+  @@map("insumo")
+}
+
+model Receta {
+  id            Int               @id
+  codigo        String // REC-MRC01
+  producto_id   Int
+  producto      Producto          @relation(fields: [producto_id], references: [id])
+  version       Int
+  vigente_desde DateTime          @db.Date
+  base_kg       Float // las cantidades están expresadas cada base_kg de producto
+  activa        Boolean           @default(true)
+  items         RecetaItem[]
+  ordenes       OrdenProduccion[]
+
+  @@unique([codigo, version])
+  @@map("receta")
+}
+
+model RecetaItem {
+  receta_id     Int
+  receta        Receta @relation(fields: [receta_id], references: [id])
+  insumo_id     Int
+  insumo        Insumo @relation(fields: [insumo_id], references: [id])
+  cantidad_base Float // cantidad de insumo cada base_kg de producto
+
+  @@id([receta_id, insumo_id])
+  @@map("receta_item")
+}
+
+/// Cada partida (lote) de insumo que entregó un proveedor. "cantidad" es el saldo actual.
+model PartidaInsumo {
+  id               Int           @id @default(autoincrement())
+  insumo_id        Int
+  insumo           Insumo        @relation(fields: [insumo_id], references: [id])
+  nro_lote         String // lote de origen del proveedor (MF-261001)
+  proveedor        String?
+  cantidad         Float
+  vencimiento      DateTime?     @db.Date
+  documento_origen String? // remito del proveedor
+  estado           EstadoPartida @default(LIBERADO)
+  ingreso          DateTime      @db.Timestamptz(3)
+  consumos         Consumo[]
+
+  @@index([insumo_id, estado])
+  @@index([nro_lote])
+  @@map("partida_insumo")
+}
+
+model OrdenProduccion {
+  id                   Int             @id @default(autoincrement())
+  secuencia            Int             @unique
+  numero               String          @unique // OP-AAAA-XXXXX
+  producto_id          Int
+  producto             Producto        @relation(fields: [producto_id], references: [id])
+  receta_id            Int
+  receta               Receta          @relation(fields: [receta_id], references: [id])
+  linea_id             Int?
+  linea                Linea?          @relation(fields: [linea_id], references: [id])
+  cantidad_kg          Float
+  fecha_proyectada     DateTime        @db.Date
+  hora_prevista        String? // HH:MM
+  estado               EstadoOP
+  pausada              Boolean         @default(false)
+  motivo_pausa         String?
+  observaciones        String?
+  creado_por           String
+  creado_en            DateTime        @db.Timestamptz(3)
+  inicio_real          DateTime?       @db.Timestamptz(3)
+  operador             String?
+  fin_elaboracion      DateTime?       @db.Timestamptz(3)
+  cierre               DateTime?       @db.Timestamptz(3)
+  cantidad_real_kg     Float?
+  bultos               Int?
+  merma_kg             Float?
+  merma_pct            Float?
+  lote_codigo_previsto String?
+  vencimiento_previsto DateTime?       @db.Date
+  avance               Json? // "Guardar avance" de la ejecución
+  items                OpItem[]
+  consumos             Consumo[]
+  lote                 LoteProduccion?
+
+  @@index([estado])
+  @@map("orden_produccion")
+}
+
+/// Insumos teóricos de una orden (receta × cantidad)
+model OpItem {
+  op_id            Int
+  orden            OrdenProduccion @relation(fields: [op_id], references: [id])
+  insumo_id        Int
+  insumo           Insumo          @relation(fields: [insumo_id], references: [id])
+  cantidad_teorica Float
+
+  @@id([op_id, insumo_id])
+  @@map("op_item")
+}
+
+/// Consumo real: qué partida de proveedor entró en qué orden (trazabilidad hacia atrás)
+model Consumo {
+  id         Int             @id @default(autoincrement())
+  op_id      Int
+  orden      OrdenProduccion @relation(fields: [op_id], references: [id])
+  insumo_id  Int
+  insumo     Insumo          @relation(fields: [insumo_id], references: [id])
+  partida_id Int
+  partida    PartidaInsumo   @relation(fields: [partida_id], references: [id])
+  cantidad   Float
+
+  @@index([op_id])
+  @@index([partida_id])
+  @@map("consumo")
+}
+
+model LoteProduccion {
+  id          Int              @id @default(autoincrement())
+  codigo      String           @unique // L-MRC01-202644-01
+  op_id       Int              @unique
+  orden       OrdenProduccion  @relation(fields: [op_id], references: [id])
+  producto_id Int
+  producto    Producto         @relation(fields: [producto_id], references: [id])
+  cantidad_kg Float
+  bultos      Int
+  vencimiento DateTime         @db.Date
+  estado      EstadoLote
+  creado_en   DateTime         @db.Timestamptz(3)
+  borrador    Json? // "Guardar borrador" del control de calidad
+  control     ControlCalidad?
+  stock       StockPT[]
+  pallets     Pallet[]
+  despachos   Despacho[]
+
+  @@index([estado])
+  @@map("lote_produccion")
+}
+
+/// Protocolo de calidad firmado (formulario R.BPM.01V01). Es inalterable: lo protege un trigger.
+model ControlCalidad {
+  id            Int            @id @default(autoincrement())
+  lote_id       Int            @unique
+  lote          LoteProduccion @relation(fields: [lote_id], references: [id])
+  protocolo     String         @unique // CC-AAAA-XXXXX
+  formulario    String // R.BPM.01V01
+  humedad       Float
+  ph            Float
+  aroma         String
+  color         String
+  sabor         String
+  ufc           Int
+  dictamen      Dictamen
+  observaciones String?
+  analista      String
+  fecha         DateTime       @db.Timestamptz(3)
+
+  @@map("control_calidad")
+}
+
+/// Ingreso de producto terminado a depósito. "cantidad_kg" es el saldo vendible.
+model StockPT {
+  id             Int            @id @default(autoincrement())
+  lote_id        Int
+  lote           LoteProduccion @relation(fields: [lote_id], references: [id])
+  comprobante    String // REC-AAAA-XXXXX
+  deposito       String
+  sector         String
+  rack           String
+  nivel          String
+  camara         String?
+  bultos         Int
+  pallets        Int
+  kg_recibidos   Float
+  cantidad_kg    Float
+  bultos_danados Int            @default(0)
+  merma_kg       Float          @default(0)
+  justificacion  String?
+  recibido_por   String
+  fecha          DateTime       @db.Timestamptz(3)
+
+  @@index([lote_id])
+  @@map("stock_pt")
+}
+
+model Pallet {
+  id      Int            @id @default(autoincrement())
+  codigo  String         @unique // PAL-AAAA-XXXXX
+  lote_id Int
+  lote    LoteProduccion @relation(fields: [lote_id], references: [id])
+  bultos  Int
+  kg      Float
+
+  @@map("pallet")
+}
+
+model Despacho {
+  id          Int            @id @default(autoincrement())
+  lote_id     Int
+  lote        LoteProduccion @relation(fields: [lote_id], references: [id])
+  cliente     String
+  cantidad_kg Float
+  fecha       DateTime       @db.Timestamptz(3)
+  usuario     String
+
+  @@map("despacho")
+}
+
+/// Registro de auditoría: todo lo que pasa en el sistema. Sólo se agregan renglones (trigger).
+model Auditoria {
+  id        Int      @id @default(autoincrement())
+  fecha     DateTime @db.Timestamptz(3)
+  usuario   String
+  rol       String
+  accion    String
+  entidad   String?
+  detalle   String?
+  resultado String?
+  op_id     Int?
+  lote_id   Int?
+
+  @@index([op_id])
+  @@index([lote_id])
+  @@index([accion])
+  @@map("auditoria")
+}
