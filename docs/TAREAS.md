@@ -13,11 +13,14 @@
       cambio de rol con un clic en la demo, glosario al pasar el mouse y página "¿Cómo funciona SIGTA?"
 - [x] Modo claro / oscuro y versión para celular
 - [x] 28 pruebas de la API y 8 recorridos en el navegador (Playwright)
-- [x] Integración continua (GitHub Actions) y despliegue preparado (Render + Neon)
+- [x] Integración continua (GitHub Actions) y despliegue en Vercel + Neon
+- [x] Catálogo real de agrifood-argentina.com: 5 líneas, 31 productos con su ficha, insumos y recetas
+- [x] Aplicación instalable (PWA) en PC, celular y colectoras
 
 ## Para seguir
 
-- [ ] Publicar la demo (ver `docs/DESPLIEGUE.md`)
+- [ ] Conectar la base Neon en Vercel (ver `docs/DESPLIEGUE.md`)
+- [ ] Validar con Producción las proporciones de las recetas y con Calidad las especificaciones
 - [ ] Dividir en repositorios `SIGTA-Agrofood-Back` (carpeta `server/`) y `SIGTA-Agrofood-Front` (carpeta `client/`)
 - [ ] Reemplazar los valores de especificación de ejemplo por los reales de Calidad
 - [ ] Revisar con Agrifood los códigos (OP, lote, protocolo, pallet), vidas útiles y GTIN reales

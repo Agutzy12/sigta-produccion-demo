@@ -52,6 +52,7 @@ export const RUTAS: Ruta[] = [
   // Datos generales
   { metodo: 'get', ruta: '/config', ejecutar: () => ({ planta: PLANTA, ubicaciones: UBICACIONES, motivos_pausa: MOTIVOS_PAUSA, demo: MODO_DEMO, roles: NOMBRE_ROL }) },
   { metodo: 'get', ruta: '/productos', ejecutar: () => inventario.listProductos() },
+  { metodo: 'get', ruta: '/catalogo', ejecutar: () => inventario.catalogo() },
   { metodo: 'get', ruta: '/lineas', ejecutar: () => inventario.listLineas() },
   { metodo: 'get', ruta: '/recetas/:id', ejecutar: (c) => inventario.getReceta(id(c)) },
   { metodo: 'get', ruta: '/insumos', ejecutar: () => inventario.listInsumos() },

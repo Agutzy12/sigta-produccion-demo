@@ -5,7 +5,7 @@ import { api, ErrorApi } from '../lib/api';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
 import { LogoEmpresa } from '../contexto/Tema';
-import { fecha, fechaHora, hora, kg, leerNumero, num, plural } from '../lib/formato';
+import { fecha, fechaHora, hora, kg, leerNumero, num, pesoTexto, plural } from '../lib/formato';
 import { ESTADOS_LOTE } from '../lib/estados';
 import type { EstadoLote, Pallet } from '../lib/tipos';
 import { Cabecera, Cargando, ConUnidad, Dato, Miga, Pill, PillLote, Termino, Vacio } from '../componentes/Comunes';
@@ -14,7 +14,7 @@ import { EtiquetaGS1 } from '../componentes/EtiquetaGS1';
 
 interface Ficha {
   tipo: 'LOTE';
-  lote: { id: number; codigo: string; estado: EstadoLote; cantidad_kg: number; bultos: number; vencimiento: string; creado_en: string; producto_codigo: string; producto_nombre: string; presentacion_kg: number };
+  lote: { id: number; codigo: string; estado: EstadoLote; cantidad_kg: number; bultos: number; vencimiento: string; creado_en: string; producto_codigo: string; producto_nombre: string; presentacion_kg: number; presentacion: string; url_web: string | null; categoria_nombre: string | null };
   op: { numero: string; inicio_real: string | null; merma_pct: number | null; linea_nombre: string | null };
   origen: { insumo_id: number; insumo_nombre: string; unidad: string; total: number; proveedores: string[]; lotes: { nro_lote: string; cantidad: number; documento_origen: string | null }[] }[];
   resumen_origen: { insumos: number; partidas: number };
@@ -190,12 +190,12 @@ function FichaLote({ f, buscar, despacho }: { f: Ficha; buscar: (q: string) => v
   return (
     <>
       <section className="tarjeta">
-        <div className="tarjeta-cab"><div><div className="codigo" style={{ fontSize: 12, textTransform: 'uppercase' }}>{lote.producto_codigo} · Producto terminado</div>
-          <h2 style={{ fontSize: 28, margin: '4px 0' }}>{lote.producto_nombre}</h2><p className="sub">{lote.codigo} · {op.numero}</p></div>
+        <div className="tarjeta-cab"><div><div className="codigo" style={{ fontSize: 12, textTransform: 'uppercase' }}>{lote.producto_codigo} · {lote.categoria_nombre ?? 'Producto terminado'}</div>
+          <h2 style={{ fontSize: 28, margin: '4px 0' }}>{lote.producto_nombre} · {lote.presentacion}</h2><p className="sub">{lote.codigo} · {op.numero}{lote.url_web && <> · <a className="enlace" href={lote.url_web} target="_blank" rel="noreferrer">Ficha en la web de Agrifood ↗</a></>}</p></div>
           <Pill color={color}>{texto}</Pill></div>
         <div className="rejilla col-3">
           <Dato titulo="Elaborado · Vence">{fecha(op.inicio_real || lote.creado_en)} · {fecha(lote.vencimiento)}</Dato>
-          <Dato titulo="Cantidad">{kg(lote.cantidad_kg)} · {lote.bultos} bolsas de {lote.presentacion_kg} kg</Dato>
+          <Dato titulo="Cantidad">{kg(lote.cantidad_kg)} · {num(lote.bultos)} unidades de {pesoTexto(lote.presentacion_kg)}</Dato>
           <Dato titulo="Stock vendible">{kg(f.stock_vendible_kg)}</Dato>
         </div>
       </section>

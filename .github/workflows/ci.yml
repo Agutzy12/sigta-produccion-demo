@@ -19,6 +19,7 @@ jobs:
           --health-cmd "pg_isready -U sigta" --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://sigta:sigta@localhost:5432/sigta?schema=public
+      DATABASE_URL_UNPOOLED: postgresql://sigta:sigta@localhost:5432/sigta?schema=public
       DATABASE_URL_TEST: postgresql://sigta:sigta@localhost:5432/sigta_test?schema=public
       JWT_SECRET: clave-de-integracion-continua
       TZ: America/Argentina/Cordoba

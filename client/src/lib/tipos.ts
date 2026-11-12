@@ -14,6 +14,9 @@ export interface Pendientes { planificar: number; elaborar: number; calidad: num
 export interface Producto {
   id: number; codigo: string; nombre: string; gtin: string; linea_id: number; presentacion_kg: number; vida_util_meses: number;
   receta_id: number; receta_codigo: string; receta_version: number; receta_base_kg: number;
+  categoria_codigo: string | null; categoria_nombre: string | null; familia: string | null; presentacion: string;
+  unidades_por_caja: number | null; unidades_por_pallet: number; raciones: number | null;
+  ingredientes: string | null; alergenos: string | null; almacenamiento: string | null; embalaje: string | null; url_web: string | null;
 }
 export interface Linea { id: number; nombre: string }
 export interface Partida { id: number; nro_lote: string; proveedor: string | null; cantidad: number; vencimiento: string | null; documento_origen: string | null }
@@ -31,6 +34,7 @@ export interface OrdenResumen {
 }
 export interface Orden extends OrdenResumen {
   receta_id: number; receta_codigo: string; receta_version: number; presentacion_kg: number; vida_util_meses: number;
+  presentacion: string; unidades_por_pallet: number; url_web: string | null;
   inicio_real: string | null; lote_codigo_previsto: string | null; vencimiento_previsto: string | null;
   cantidad_real_kg: number | null; bultos: number | null; merma_pct: number | null; merma_kg: number | null;
   items: ItemOrden[]; consumo_sugerido?: FilaConsumo[];

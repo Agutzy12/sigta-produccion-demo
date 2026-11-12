@@ -10,13 +10,14 @@
     "dev": "tsx watch --env-file=.env src/index.ts",
     "build": "prisma generate && tsc -p tsconfig.build.json",
     "start": "node --env-file-if-exists=.env dist/index.js",
-    "db:migrate": "prisma migrate deploy",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrar.mjs",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx --env-file=.env src/seed/cli.ts",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "db:seed:si-vacia": "node --env-file-if-exists=.env dist/seed/cli.js --si-vacia"
   },
   "prisma": {
     "schema": "prisma/schema.prisma"

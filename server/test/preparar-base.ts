@@ -5,5 +5,5 @@ import { loadEnv } from 'vite';
 export default function preparar() {
   const env = { ...loadEnv('test', process.cwd(), ''), ...process.env };
   const url = env.DATABASE_URL_TEST ?? 'postgresql://sigta:sigta@localhost:5432/sigta_test?schema=public';
-  execSync('npx prisma migrate deploy', { stdio: 'pipe', env: { ...process.env, DATABASE_URL: url } });
+  execSync('npx prisma migrate deploy', { stdio: 'pipe', env: { ...process.env, DATABASE_URL: url, DATABASE_URL_UNPOOLED: url } });
 }

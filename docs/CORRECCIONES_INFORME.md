@@ -33,3 +33,13 @@ Hoy el informe no nombra el stack. Sugerencia de texto:
 
 En la sección 10.B, donde dice "PostgreSQL o MySQL sobre servicios como Amazon RDS o Azure SQL", se puede agregar
 "(en esta etapa: PostgreSQL gestionado en Neon)".
+
+## Observaciones sobre la web de la empresa (agrifood-argentina.com)
+
+Al cargar el catálogo en SIGTA se detectaron detalles para comentar con Agrifood:
+
+- **Bizcochuelos:** la ficha de *Bizcochuelo Sabor Chocolate* muestra los ingredientes de los *Ñoquis de Papa* (papa deshidratada,
+  nuez moscada), y la de *Vainilla* dice "aroma artificial a chocolate". En SIGTA se cargaron ingredientes coherentes con cada sabor.
+- **Arándanos:** las dos presentaciones (120 g y 5 kg) muestran el mismo texto ("Se despachan en cajas de 10 kgs").
+- **Tirabuzón** figura sin tilde ("Tirabuzon").
+- Las fichas no publican las proporciones de las recetas ni el palletizado de frutos secos y pre elaborados: en SIGTA son de ejemplo.

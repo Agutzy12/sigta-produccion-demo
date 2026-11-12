@@ -29,7 +29,7 @@ export function EtiquetaGS1({ e }: { e: DatosEtiqueta }) {
         <div><span>Lote (10): </span><b>{e.lote}</b></div>
         <div><span>Vence (17): </span><b>{fecha(e.vencimiento)}</b></div>
         <div><span>Peso neto (3102): </span><b>{kg(e.kg)}</b></div>
-        <div><span>Bolsas: </span><b>{e.bultos}</b></div>
+        <div><span>Unidades: </span><b>{e.bultos}</b></div>
       </div>
     </div>
   );

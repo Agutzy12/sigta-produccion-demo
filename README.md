@@ -19,7 +19,12 @@ y a qué cliente llegó.
 | — | Consulta | Panel · Trazabilidad de lote · Etiquetas GS1-128 | Todos (Gerencia: sólo lectura) |
 
 Además: inicio de sesión con contraseña, permisos por rol, registro de auditoría, bloqueo lógico en la aplicación **y** en la base de datos,
-etiquetas logísticas **GS1-128** con código de barras real, modo claro/oscuro y versión para celular.
+etiquetas logísticas **GS1-128** con código de barras real, modo claro/oscuro, y **aplicación instalable** (PWA) en PC, celular o colectoras.
+
+**Catálogo real:** los 31 productos y las 5 líneas de [agrifood-argentina.com](https://agrifood-argentina.com/productos.php)
+(Deshidratados, Frutos secos, Pre elaborados, Pre mezclas y Pastas secas), con su presentación, vida útil, ingredientes, alérgenos,
+embalaje y palletizado tal como los publica la empresa, y un enlace a la ficha de cada producto en la web.
+Las recetas usan los ingredientes publicados; las proporciones, los códigos internos y los valores de calidad son de ejemplo.
 
 > Los datos y los valores de especificación son **de ejemplo**: no son límites normativos.
 
@@ -34,7 +39,8 @@ etiquetas logísticas **GS1-128** con código de barras real, modo claro/oscuro 
 | Seguridad | **bcrypt + JWT** | Contraseñas cifradas y sesión firmada |
 | Pantallas | **React + Vite + TypeScript + Tailwind CSS** | Interfaz web, también usable desde el celular |
 | Códigos de barras | **bwip-js** | Etiquetas GS1-128 con IA (01), (17), (3102) y (10) |
-| Pruebas | **Vitest + Supertest** (API) · **Playwright** (navegador) | 28 pruebas de la API y 8 recorridos completos en el navegador |
+| App instalable | **PWA** (manifest + service worker) | Se instala en PC, celular o colectoras y abre como una aplicación |
+| Pruebas | **Vitest + Supertest** (API) · **Playwright** (navegador) | 30 pruebas de la API y 10 recorridos completos en el navegador |
 
 La explicación de cada decisión está en [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
 
@@ -99,9 +105,11 @@ server/                API REST (Express + TypeScript)
   prisma/schema.prisma   Modelo de datos
   prisma/migrations/     Tablas y reglas de la base (triggers)
   src/services/          Un servicio por tema: órdenes, calidad, depósito, trazabilidad, GS1...
+  src/seed/catalogo.ts   El catálogo de agrifood-argentina.com (productos, insumos y recetas)
   src/rutas.ts           Rutas de la API y matriz de permisos por rol
   src/seed/              Datos de ejemplo
   test/                  Pruebas de la API
+api/index.js           Función de Vercel: atiende /api con la misma aplicación Express
 client/                Pantallas (React + Vite + Tailwind)
   src/paginas/           Una pantalla por paso del circuito
   src/componentes/       Menú, guía de pasos, etiquetas GS1...
@@ -111,4 +119,5 @@ docs/                  Arquitectura, guion de la demo, despliegue y tareas
 
 ## Publicarla en internet
 
-Ver [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md): PostgreSQL gestionado en **Neon** y la aplicación en **Render** (`render.yaml` ya está preparado).
+Se publica en **Vercel** con la base **PostgreSQL en Neon** (`vercel.json` y `api/index.js` ya están preparados).
+Los pasos están en [`docs/DESPLIEGUE.md`](docs/DESPLIEGUE.md).

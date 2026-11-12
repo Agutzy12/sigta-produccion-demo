@@ -3,7 +3,11 @@
   "private": true,
   "version": "1.0.0",
   "description": "SIGTA · Sistema Integral de Gestión y Trazabilidad Alimentaria. Demo del módulo de Producción y Trazabilidad para Agrifood Argentina S.A.",
-  "workspaces": ["server", "client"],
+  "type": "module",
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
@@ -15,7 +19,9 @@
     "test:e2e": "npm run test:e2e -w client",
     "lint": "npm run lint -w client"
   },
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "author": "Benitez Agustin",
   "license": "MIT"
 }

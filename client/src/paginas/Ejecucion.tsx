@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useDatos } from '../lib/useDatos';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
-import { fecha, fechaCorta, fechaHora, hoyTexto, kg, leerNumero, num } from '../lib/formato';
+import { fecha, fechaCorta, fechaHora, hoyTexto, kg, leerNumero, num, pesoTexto } from '../lib/formato';
 import type { Color } from '../lib/estados';
 import type { FilaConsumo, Orden, OrdenResumen } from '../lib/tipos';
 import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, PillOP, Termino, Vacio } from '../componentes/Comunes';
@@ -89,7 +89,7 @@ function CabeceraOrden({ orden: o }: { orden: Orden }) {
   };
   return (
     <>
-      <Cabecera titulo="Elaborar" sub={`${o.producto_nombre} · ${o.linea_nombre ?? ''} · ${o.hora_prevista < '14:00' ? 'Turno mañana' : 'Turno tarde'}`}>
+      <Cabecera titulo="Elaborar" sub={`${o.producto_nombre} ${o.presentacion} · ${o.linea_nombre ?? ''} · ${o.hora_prevista < '14:00' ? 'Turno mañana' : 'Turno tarde'}`}>
         <button className="btn" onClick={verReceta}><Icono n="libro" /> Ver receta</button>
       </Cabecera>
       <Proceso actual={2} guia={o.estado === 'PLANIFICADA' || enProd} />
@@ -157,7 +157,7 @@ function VistaCerrada({ orden: o }: { orden: Orden }) {
   return (
     <section className="tarjeta">
       <Vacio titulo={o.estado === 'CANCELADA' ? 'La orden fue cancelada' : 'La elaboración ya fue registrada'}>
-        {o.cantidad_real_kg ? <>Se elaboraron {kg(o.cantidad_real_kg)} netos ({o.bultos} bolsas). Merma de proceso: {num(o.merma_pct, 2)} %.<br /><br /></> : null}
+        {o.cantidad_real_kg ? <>Se elaboraron {kg(o.cantidad_real_kg)} netos ({num(o.bultos)} unidades de {pesoTexto(o.presentacion_kg)}). Merma de proceso: {num(o.merma_pct, 2)} %.<br /><br /></> : null}
         {o.estado !== 'CANCELADA' && <Link className="btn primario" to={`/trazabilidad?q=${encodeURIComponent(o.lote_codigo || o.numero)}`}><Icono n="trazabilidad" /> Ver trazabilidad del lote</Link>}
       </Vacio>
     </section>
@@ -190,7 +190,8 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
   const partidaDe = (f: Fila) => itemDe(f.insumo_id).partidas?.find((p) => p.id === f.partida_id);
   const mpConsumidos = filas.filter((f) => itemDe(f.insumo_id).tipo === 'MP').reduce((a, f) => a + (leerNumero(f.cantidad) || 0), 0);
 
-  const netoSugerido = Math.round((mpConsumidos * 0.98) / presentacion) * presentacion;
+  // sugerencia: el 98 % del objetivo, redondeado a unidades enteras (en deshidratados, lo consumido es mucho más: es el agua que se evapora)
+  const netoSugerido = Math.round(Math.round((o.cantidad_kg * 0.98) / presentacion) * presentacion * 1000) / 1000;
   const [neto, setNeto] = useState(String(o.avance?.cantidad_real_kg ?? netoSugerido));
   const [bolsas, setBolsas] = useState(String(o.avance?.bultos ?? Math.round(leerNumero(o.avance?.cantidad_real_kg ?? netoSugerido) / presentacion)));
   const [motivo, setMotivo] = useState(config?.motivos_pausa[0] ?? '');
@@ -320,8 +321,8 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
             <div className="campo"><label htmlFor="neto">Kg netos elaborados *</label>
               <ConUnidad unidad="kg"><input className="entrada" id="neto" inputMode="decimal" disabled={!editable} value={neto}
                 onChange={(e) => { setNeto(e.target.value); setBolsas(String(Math.round((leerNumero(e.target.value) || 0) / presentacion))); }} /></ConUnidad></div>
-            <div className="campo"><label htmlFor="bolsas">Bolsas</label>
-              <ConUnidad unidad={`× ${presentacion} kg`}><input className="entrada" id="bolsas" inputMode="numeric" disabled={!editable} value={bolsas} onChange={(e) => setBolsas(e.target.value)} /></ConUnidad></div>
+            <div className="campo"><label htmlFor="bolsas">Unidades</label>
+              <ConUnidad unidad={`× ${pesoTexto(presentacion)}`}><input className="entrada" id="bolsas" inputMode="numeric" disabled={!editable} value={bolsas} onChange={(e) => setBolsas(e.target.value)} /></ConUnidad></div>
             <div className="campo"><label><Termino t="merma">Merma</Termino></label>
               <div className="entrada" data-testid="merma" style={{ background: 'var(--ambar-suave)', borderColor: 'var(--ambar-suave)', color: 'var(--ambar-oscuro)', fontSize: 24, fontWeight: 600, padding: '8px 14px' }}>
                 {num(mermaPct, 2)} % <small style={{ fontSize: 14, fontWeight: 600, marginLeft: 6 }}>{num(Math.max(0, mpConsumidos - netoNum), 1)} kg</small></div></div>

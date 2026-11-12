@@ -22,9 +22,13 @@ export function Ingresar() {
   const [clave, setClave] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [demo, setDemo] = useState<{ clave: string; usuarios: Usuario[] } | null>(null);
+  const [sinServidor, setSinServidor] = useState<string | null>(null);
   const volver = parametros.get('volver') || '/panel';
 
-  useEffect(() => { api.get<{ clave: string; usuarios: Usuario[] }>('/auth/demo').then(setDemo).catch(() => setDemo(null)); }, []);
+  useEffect(() => {
+    api.get('/salud').then(() => setSinServidor(null)).catch((e: Error) => setSinServidor(e.message));
+    api.get<{ clave: string; usuarios: Usuario[] }>('/auth/demo').then(setDemo).catch(() => setDemo(null));
+  }, []);
 
   if (usuario) return <Navigate to={volver} replace />;
 
@@ -57,6 +61,7 @@ export function Ingresar() {
           <h2>Ingresar</h2>
           <p className="sub" style={{ color: 'var(--texto-suave)', marginTop: 4 }}>Usá tu email y contraseña de SIGTA.</p>
         </div>
+        {sinServidor && <div className="aviso rojo" role="alert"><div><b>El sistema no está disponible</b>{sinServidor}</div></div>}
         <form onSubmit={enviar} className="rejilla" style={{ gap: 16 }}>
           <div className="campo"><label htmlFor="email">Email</label>
             <input id="email" className="entrada" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>

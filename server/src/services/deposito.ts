@@ -4,7 +4,7 @@
  */
 import { db, tx } from '../db.js';
 import { ahora } from '../clock.js';
-import { BULTOS_POR_PALLET, UBICACIONES } from '../config.js';
+import { UBICACIONES } from '../config.js';
 import { bloqueado, datosInvalidos, noExiste, noSePuede } from '../errores.js';
 import { redondear, rellenar, aNumero, auditar, type UsuarioActual } from './comun.js';
 import { etiquetaPallet } from './gs1.js';
@@ -25,16 +25,16 @@ export async function recepcionesPendientes() {
 }
 
 /**
- * Reparte las bolsas en pallets de BULTOS_POR_PALLET.
- * Ejemplo: 49 bolsas -> un pallet de 25 y otro de 24. Los kilos se reparten en proporción.
+ * Reparte las unidades en pallets según el palletizado del producto (dato de la web de Agrifood).
+ * Ejemplo: 50 bolsas de 20 kg con 40 por pallet -> un pallet de 40 y otro de 10. Los kilos se reparten en proporción.
  */
-export async function armarPallets(bultos: number, kg: number, anio: number) {
+export async function armarPallets(bultos: number, kg: number, anio: number, porPallet: number) {
   const ultimo = await db().pallet.count();
-  const cantidad = Math.ceil(bultos / BULTOS_POR_PALLET);
+  const cantidad = Math.ceil(bultos / porPallet);
   const pallets: { codigo: string; bultos: number; kg: number }[] = [];
   let kgAsignados = 0;
   for (let i = 0; i < cantidad; i++) {
-    const enEste = i < cantidad - 1 ? BULTOS_POR_PALLET : bultos - BULTOS_POR_PALLET * (cantidad - 1);
+    const enEste = i < cantidad - 1 ? porPallet : bultos - porPallet * (cantidad - 1);
     const esElUltimo = i === cantidad - 1;
     const kgEste = esElUltimo ? redondear(kg - kgAsignados, 2) : redondear((kg * enEste) / bultos, 2);
     kgAsignados += kgEste;
@@ -66,7 +66,7 @@ export async function getRecepcion(opId: number) {
     lote: datosLote,
     producto,
     certificado: control,
-    pallets_previstos: await armarPallets(lote.bultos, lote.cantidad_kg, anio),
+    pallets_previstos: await armarPallets(lote.bultos, lote.cantidad_kg, anio, producto.unidades_por_pallet),
     comprobante: `REC-${op.numero.slice(3)}`,
     ubicaciones: UBICACIONES,
   };
@@ -113,7 +113,7 @@ export function ingresarProductoTerminado(usuario: UsuarioActual, cuerpo: DatosI
     if (llevaCamara && !cuerpo.camara) throw datosInvalidos('Elegí la cámara de frío');
 
     const momento = ahora();
-    const pallets = await armarPallets(bultos, kg, momento.getFullYear());
+    const pallets = await armarPallets(bultos, kg, momento.getFullYear(), op.producto.unidades_por_pallet);
     const comprobante = `REC-${op.numero.slice(3)}`;
 
     await db().pallet.createMany({ data: pallets.map((p) => ({ ...p, lote_id: lote.id })) });

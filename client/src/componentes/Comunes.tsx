@@ -53,7 +53,7 @@ export function ErrorCarga({ error, reintentar }: { error: Error; reintentar?: (
   );
 }
 
-/** Campo con la unidad a la derecha ("kg", "%", "bolsas"). */
+/** Campo con la unidad a la derecha ("kg", "%", "unidades"). */
 export function ConUnidad({ unidad, children, ancho }: { unidad: ReactNode; children: ReactNode; ancho?: number }) {
   return <div className="con-unidad" style={ancho ? { width: ancho } : undefined}>{children}<span>{unidad}</span></div>;
 }

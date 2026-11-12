@@ -12,6 +12,7 @@ import { QUE_HACE, USUARIO_DE_ROL } from '../lib/demo';
 import type { Pendientes, Rol } from '../lib/tipos';
 import { Icono, IsotipoSigta, type NombreIcono } from './Icono';
 import { Pill } from './Comunes';
+import { BotonInstalar } from './InstalarApp';
 import { LogoEmpresa, useTema } from '../contexto/Tema';
 
 const activo = ({ isActive }: { isActive: boolean }) => (isActive ? 'activo' : '');
@@ -145,6 +146,7 @@ export function Layout() {
         <div className="menu-titulo">Consultas</div>
         <nav className="menu">
           <NavLink to="/trazabilidad" className={activo}><Icono n="trazabilidad" /><span>Trazabilidad de lote</span></NavLink>
+          <NavLink to="/catalogo" className={activo}><Icono n="caja" /><span>Catálogo de productos</span></NavLink>
         </nav>
         <div className="menu-titulo">Próximamente</div>
         <nav className="menu">
@@ -160,6 +162,7 @@ export function Layout() {
           <button className="btn-icono btn-menu" aria-label="Abrir menú" onClick={() => setMenuAbierto(!menuAbierto)}><Icono n="menu" /></button>
           <div className="fecha">{config.planta} · {fechaLarga()}</div>
           <div className="derecha">
+            <BotonInstalar />
             {config.demo && <button className="chip-demo" onClick={() => setAbierto(abierto === 'demo' ? '' : 'demo')}><span className="punto" />Datos de ejemplo</button>}
             <button className="btn-icono" type="button" onClick={cambiarTema} title={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
               aria-label={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}><Icono n={tema === 'oscuro' ? 'sol' : 'luna'} /></button>

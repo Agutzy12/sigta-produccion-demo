@@ -41,9 +41,9 @@ interface ItemRequerido {
 const textoFaltantes = (items: ItemRequerido[]) =>
   items.filter((i) => !i.ok).map((i) => `${i.nombre}: faltan ${i.faltante} ${i.unidad}`).join('; ');
 
-/** Orden de los insumos en pantalla: primero materias primas, después empaque. */
-const porTipoEId = <T extends { tipo: string; insumo_id: number }>(a: T, b: T) =>
-  a.tipo === b.tipo ? a.insumo_id - b.insumo_id : a.tipo === 'MP' ? -1 : 1;
+/** Orden de los insumos en pantalla: primero materias primas (la principal arriba), después empaque. */
+const porTipoYCantidad = <T extends { tipo: string; insumo_id: number }>(cantidad: (x: T) => number) => (a: T, b: T) =>
+  a.tipo !== b.tipo ? (a.tipo === 'MP' ? -1 : 1) : a.tipo === 'MP' ? cantidad(b) - cantidad(a) || a.insumo_id - b.insumo_id : a.insumo_id - b.insumo_id;
 
 /**
  * Calcula cuánto de cada insumo necesita una receta para `kg` de producto
@@ -70,7 +70,7 @@ export async function requerimientos(productoId: number, kg: number) {
         requerido, disponible, faltante, ok: faltante === 0,
       };
     })
-    .sort(porTipoEId);
+    .sort(porTipoYCantidad((i) => i.requerido));
 
   const kgMateriaPrima = items.filter((i) => i.tipo === 'MP').reduce((a, i) => a + i.requerido, 0);
   return {
@@ -243,7 +243,7 @@ export async function getOrden(id: number) {
       tipo: oi.insumo.tipo, unidad: oi.insumo.unidad, critico: oi.insumo.critico,
       partidas: undefined as Awaited<ReturnType<typeof partidasDisponibles>> | undefined,
     }))
-    .sort(porTipoEId);
+    .sort(porTipoYCantidad((i) => i.cantidad_teorica));
 
   let consumo_sugerido: FilaConsumo[] | undefined;
   if (op.estado === 'EN_PRODUCCION') {
@@ -253,6 +253,7 @@ export async function getOrden(id: number) {
   return {
     ...resto,
     producto_codigo: producto.codigo, producto_nombre: producto.nombre, presentacion_kg: producto.presentacion_kg,
+    presentacion: producto.presentacion, unidades_por_pallet: producto.unidades_por_pallet, url_web: producto.url_web,
     vida_util_meses: producto.vida_util_meses, linea_nombre: linea?.nombre ?? null,
     receta_codigo: receta.codigo, receta_version: receta.version, receta_vigente_desde: receta.vigente_desde,
     items,

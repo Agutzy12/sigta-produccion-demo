@@ -561,6 +561,9 @@ table.tabla { width: 100%; border-collapse: collapse; }
   .glosario dt { font-weight: 700; }
   .glosario dd { margin: 2px 0 0; color: var(--texto-2); font-size: 14px; }
 
+  /* Fichas técnicas: textos largos en peso normal */
+  .plegable .dato b, .modal .dato b { font-weight: 400; font-size: 14.5px; }
+
   /* El contenido de cada pantalla entra suave cuando ya tiene datos */
   .pantalla-entra { animation: subir .24s ease-out both; }
 

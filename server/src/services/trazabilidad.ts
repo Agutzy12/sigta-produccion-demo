@@ -12,7 +12,7 @@ export async function traceLote(loteId: number) {
   const lote = await db().loteProduccion.findUnique({
     where: { id: loteId },
     include: {
-      producto: true,
+      producto: { include: { categoria: true } },
       orden: { include: { linea: true, receta: true } },
       control: true,
       stock: { orderBy: { id: 'asc' } },
@@ -61,7 +61,10 @@ export async function traceLote(loteId: number) {
   const { linea, receta, avance: _a, ...datosOrden } = orden;
   return {
     tipo: 'LOTE' as const,
-    lote: { ...datosLote, producto_codigo: producto.codigo, producto_nombre: producto.nombre, presentacion_kg: producto.presentacion_kg, gtin: producto.gtin },
+    lote: {
+      ...datosLote, producto_codigo: producto.codigo, producto_nombre: producto.nombre, presentacion_kg: producto.presentacion_kg, gtin: producto.gtin,
+      presentacion: producto.presentacion, url_web: producto.url_web, categoria_nombre: producto.categoria?.nombre ?? null,
+    },
     op: { ...datosOrden, linea_nombre: linea?.nombre ?? null, receta_codigo: receta.codigo, receta_version: receta.version },
     origen,
     resumen_origen: { insumos: origen.length, partidas: consumos.length },

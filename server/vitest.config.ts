@@ -11,6 +11,6 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 30_000,
     hookTimeout: 60_000,
-    env: { DATABASE_URL: urlTest, TZ: 'America/Argentina/Cordoba', DEMO_MODE: 'true', NODE_ENV: 'test' },
+    env: { DATABASE_URL: urlTest, DATABASE_URL_UNPOOLED: urlTest, TZ: 'America/Argentina/Cordoba', DEMO_MODE: 'true', NODE_ENV: 'test' },
   },
 });

@@ -5,6 +5,7 @@ import { GLOSARIO } from '../lib/glosario';
 import { PASOS } from '../lib/proceso';
 import { Cabecera, Miga } from '../componentes/Comunes';
 import { Icono } from '../componentes/Icono';
+import { ComoInstalar } from '../componentes/InstalarApp';
 
 export function ComoFunciona() {
   const { nombreRol } = useSesion();
@@ -62,6 +63,8 @@ export function ComoFunciona() {
           <p className="sub" style={{ marginTop: 12 }}><Icono n="info" tam={16} /> En la demo podés cambiar de usuario desde tu nombre, arriba a la derecha.</p>
         </section>
       </div>
+
+      <ComoInstalar />
 
       <section className="tarjeta">
         <h2>Glosario</h2>

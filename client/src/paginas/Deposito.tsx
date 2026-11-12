@@ -5,7 +5,7 @@ import { api } from '../lib/api';
 import { useDatos } from '../lib/useDatos';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
-import { fecha, fechaHora, kg, leerNumero, num, plural } from '../lib/formato';
+import { fecha, fechaHora, kg, leerNumero, num, pesoTexto, plural } from '../lib/formato';
 import type { Pallet, Protocolo } from '../lib/tipos';
 import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, Termino, Vacio } from '../componentes/Comunes';
 import { Proceso } from '../componentes/Proceso';
@@ -18,13 +18,12 @@ interface Recepcion {
   habilitado: boolean; motivo: string | null; comprobante: string;
   op: { id: number; numero: string };
   lote: { id: number; codigo: string; bultos: number; cantidad_kg: number; vencimiento: string };
-  producto: { nombre: string; presentacion_kg: number };
+  producto: { nombre: string; presentacion_kg: number; presentacion: string; unidades_por_pallet: number };
   certificado: Protocolo | null;
   pallets_previstos: Pallet[];
 }
 interface FilaStock { id: number; lote_id: number; lote_codigo: string; producto_nombre: string; sector: string; rack: string; nivel: string; cantidad_kg: number; vencimiento: string }
 
-const POR_PALLET = 25;
 
 export function Deposito() {
   const { op } = useParams();
@@ -51,8 +50,9 @@ export function Deposito() {
   );
 }
 
-/** Reparte las bolsas en pallets de 25 (igual que el servidor) para mostrar la tabla en pantalla. */
+/** Reparte las unidades en pallets según el palletizado del producto (igual que el servidor) para mostrar la tabla. */
 function palletsPrevistos(rec: Recepcion, bultos: number, kgTotal: number): Pallet[] {
+  const POR_PALLET = rec.producto.unidades_por_pallet;
   const primero = rec.pallets_previstos[0]?.codigo ?? 'PAL-2026-00001';
   const [pre, anio, num0] = [primero.slice(0, 4), primero.slice(4, 8), Number(primero.slice(9))];
   const cantidad = Math.ceil(bultos / POR_PALLET);
@@ -130,7 +130,7 @@ function FormularioRecepcion({ rec, pendientes }: { rec: Recepcion; pendientes: 
     <>
       {!rec.habilitado && <div className="aviso rojo"><Icono n="candado" tam={22} /><div><b>No se puede recibir este lote · <Termino t="bloqueo">bloqueo lógico</Termino></b>{rec.motivo}</div></div>}
       <section className="tarjeta">
-        <div className="tarjeta-cab"><div><h2>{producto.nombre}</h2><p className="sub">{lote.bultos} bolsas de {producto.presentacion_kg} kg · lote liberado por Calidad</p></div>
+        <div className="tarjeta-cab"><div><h2>{producto.nombre} · {producto.presentacion}</h2><p className="sub">{num(lote.bultos)} unidades de {pesoTexto(producto.presentacion_kg)} · {producto.unidades_por_pallet} por pallet · lote liberado por Calidad</p></div>
           <button className="btn" onClick={cambiarLote}><Icono n="chevAbajo" tam={16} /> Cambiar lote</button></div>
         <div className="rejilla col-3"><Dato titulo="Lote">{lote.codigo}</Dato><Dato titulo="Orden">{rec.op.numero}</Dato><Dato titulo="Elaborado · Vencimiento">{kg(lote.cantidad_kg)} · {fecha(lote.vencimiento)}</Dato></div>
       </section>
@@ -139,17 +139,17 @@ function FormularioRecepcion({ rec, pendientes }: { rec: Recepcion; pendientes: 
         <div>
           <section className="tarjeta"><h2>Verificación física</h2>
             <div className="rejilla col-3" style={{ marginTop: 18 }}>
-              <div className="campo"><label htmlFor="bultos">Bolsas recibidas *</label><ConUnidad unidad="bolsas"><input className="entrada" id="bultos" inputMode="numeric" disabled={!habilitado} value={f.bultos} onChange={cambiar('bultos')} /></ConUnidad></div>
+              <div className="campo"><label htmlFor="bultos">Unidades recibidas *</label><ConUnidad unidad="unidades"><input className="entrada" id="bultos" inputMode="numeric" disabled={!habilitado} value={f.bultos} onChange={cambiar('bultos')} /></ConUnidad></div>
               <div className="campo"><label htmlFor="kg">Kg conformes *</label><ConUnidad unidad="kg"><input className="entrada" id="kg" inputMode="decimal" disabled={!habilitado} value={f.kg} onChange={cambiar('kg')} /></ConUnidad></div>
               <div className="campo"><label htmlFor="pallets"><Termino t="pallet">Pallets</Termino></label><ConUnidad unidad="pallets"><input className="entrada" id="pallets" readOnly value={pallets.length} /></ConUnidad></div>
             </div>
             <details className="plegable"><summary>Ver detalle de pallets</summary>
-              <table className="tabla"><thead><tr><th>Pallet</th><th>Bolsas</th><th>Peso neto</th></tr></thead>
-                <tbody>{pallets.length ? pallets.map((p) => <tr key={p.codigo}><td>{p.codigo}</td><td>{p.bultos} × {producto.presentacion_kg} kg</td><td>{kg(p.kg)}</td></tr>)
+              <table className="tabla"><thead><tr><th>Pallet</th><th>Unidades</th><th>Peso neto</th></tr></thead>
+                <tbody>{pallets.length ? pallets.map((p) => <tr key={p.codigo}><td>{p.codigo}</td><td>{num(p.bultos)} × {pesoTexto(producto.presentacion_kg)}</td><td>{kg(p.kg)}</td></tr>)
                   : <tr><td colSpan={3} style={{ color: 'var(--texto-suave)' }}>Ingresá los bultos recibidos.</td></tr>}</tbody></table>
             </details>
             <div className="rejilla col-2" style={{ marginTop: 20 }}>
-              <div className="campo"><label htmlFor="danados">Bolsas dañadas</label><ConUnidad unidad="bolsas"><input className="entrada" id="danados" inputMode="numeric" disabled={!habilitado} value={f.danados} onChange={cambiar('danados')} /></ConUnidad></div>
+              <div className="campo"><label htmlFor="danados">Unidades dañadas</label><ConUnidad unidad="unidades"><input className="entrada" id="danados" inputMode="numeric" disabled={!habilitado} value={f.danados} onChange={cambiar('danados')} /></ConUnidad></div>
               <div className="campo"><label htmlFor="merma">Merma secundaria</label><ConUnidad unidad="kg"><input className="entrada" id="merma" inputMode="decimal" disabled={!habilitado} value={f.merma} onChange={cambiar('merma')} /></ConUnidad></div>
             </div>
             {hayDesvio && (
@@ -185,7 +185,7 @@ function FormularioRecepcion({ rec, pendientes }: { rec: Recepcion; pendientes: 
             <div className="atencion-caja" style={{ margin: '16px 0 0' }}>
               <small style={{ color: 'var(--ambar-oscuro)' }}>Stock vendible a incrementar</small>
               <div style={{ fontSize: 34, fontWeight: 600, color: 'var(--ambar-oscuro)' }}>+{num(kgOk, Number.isInteger(kgOk) ? 0 : 1)} kg</div>
-              <small style={{ color: 'var(--ambar-oscuro)' }}>{bultos} bolsas · {plural(pallets.length, 'pallet')} · {hayDesvio ? `Diferencia ${kg(Math.max(0, diferencia))}` : 'Sin diferencias'}</small>
+              <small style={{ color: 'var(--ambar-oscuro)' }}>{num(bultos)} unidades · {plural(pallets.length, 'pallet')} · {hayDesvio ? `Diferencia ${kg(Math.max(0, diferencia))}` : 'Sin diferencias'}</small>
             </div>
           </section>
         </div>

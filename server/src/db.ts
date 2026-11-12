@@ -4,7 +4,19 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { Prisma, PrismaClient } from '@prisma/client';
 
-export const prisma = new PrismaClient();
+/**
+ * En la nube (Neon) la aplicación usa la conexión "con pool" (host con "-pooler"): Prisma necesita saberlo
+ * para no usar sentencias preparadas. Las migraciones usan la conexión directa (DATABASE_URL_UNPOOLED).
+ */
+function urlDeConexion() {
+  const url = process.env.DATABASE_URL;
+  if (!url) return undefined;
+  process.env.DATABASE_URL_UNPOOLED ||= url;
+  return url.includes('-pooler.') && !url.includes('pgbouncer=') ? `${url}${url.includes('?') ? '&' : '?'}pgbouncer=true` : url;
+}
+
+export const hayBaseConfigurada = () => Boolean(process.env.DATABASE_URL);
+export const prisma = new PrismaClient({ datasourceUrl: urlDeConexion() });
 
 type Cliente = Prisma.TransactionClient;
 const transaccionActual = new AsyncLocalStorage<Cliente>();

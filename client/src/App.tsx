@@ -12,11 +12,12 @@ import { Calidad } from './paginas/Calidad';
 import { Deposito } from './paginas/Deposito';
 import { Trazabilidad } from './paginas/Trazabilidad';
 import { ComoFunciona } from './paginas/ComoFunciona';
+import { Catalogo } from './paginas/Catalogo';
 
 const TITULOS: [RegExp, string][] = [
   [/^\/ingresar/, 'Ingresar'], [/^\/panel/, 'Panel de producción'], [/^\/ordenes/, 'Planificar orden'],
   [/^\/ejecucion/, 'Elaboración'], [/^\/calidad/, 'Control de calidad'], [/^\/deposito/, 'Ingreso a depósito'],
-  [/^\/trazabilidad/, 'Trazabilidad de lote'], [/^\/como-funciona/, 'Cómo funciona'],
+  [/^\/trazabilidad/, 'Trazabilidad de lote'], [/^\/catalogo/, 'Catálogo de productos'], [/^\/como-funciona/, 'Cómo funciona'],
 ];
 
 function RequiereSesion({ children }: { children: React.ReactNode }) {
@@ -49,6 +50,7 @@ export function App() {
         <Route path="/deposito" element={<Deposito />} />
         <Route path="/deposito/:op" element={<Deposito />} />
         <Route path="/trazabilidad" element={<Trazabilidad />} />
+        <Route path="/catalogo" element={<Catalogo />} />
         <Route path="/como-funciona" element={<ComoFunciona />} />
       </Route>
       <Route path="*" element={<Navigate to="/panel" replace />} />

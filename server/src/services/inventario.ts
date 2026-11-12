@@ -56,12 +56,15 @@ export const recetaVigente = (productoId: number) =>
 export async function listProductos() {
   const productos = await db().producto.findMany({
     orderBy: { id: 'asc' },
-    include: { recetas: { where: { activa: true }, orderBy: { version: 'desc' }, take: 1 } },
+    include: { categoria: true, recetas: { where: { activa: true }, orderBy: { version: 'desc' }, take: 1 } },
   });
   return productos
     .filter((p) => p.recetas.length > 0)
-    .map(({ recetas: [r], ...p }) => ({
+    .map(({ recetas: [r], categoria, ...p }) => ({
       ...p,
+      categoria_codigo: categoria?.codigo ?? null,
+      categoria_nombre: categoria?.nombre ?? null,
+      familia: categoria?.familia ?? null,
       receta_id: r.id,
       receta_codigo: r.codigo,
       receta_version: r.version,
@@ -82,7 +85,7 @@ export async function getReceta(id: number) {
       codigo: ri.insumo.codigo, nombre: ri.insumo.nombre, tipo: ri.insumo.tipo, unidad: ri.insumo.unidad,
       critico: ri.insumo.critico, cantidad_base: ri.cantidad_base, insumo_id: ri.insumo_id,
     }))
-    .sort((a, b) => (a.tipo === b.tipo ? a.insumo_id - b.insumo_id : a.tipo === 'MP' ? -1 : 1));
+    .sort((a, b) => (a.tipo !== b.tipo ? (a.tipo === 'MP' ? -1 : 1) : a.tipo === 'MP' ? b.cantidad_base - a.cantidad_base : a.insumo_id - b.insumo_id));
   const { producto, items: _, ...resto } = receta;
   return { ...resto, producto_nombre: producto.nombre, producto_codigo: producto.codigo, items };
 }
@@ -105,4 +108,29 @@ export async function reponerStock(usuario: UsuarioActual, cuerpo: { insumo_id: 
   });
   await auditar(usuario, 'REPOSICION_STOCK', insumo.codigo, `Ingreso de ${cantidad} ${insumo.unidad} de ${insumo.nombre}`);
   return { ok: true, partida: nro };
+}
+
+/** Catálogo completo por línea comercial, con la ficha técnica y la receta de cada producto. */
+export async function catalogo() {
+  const categorias = await db().categoria.findMany({
+    orderBy: { id: 'asc' },
+    include: {
+      productos: {
+        orderBy: { id: 'asc' },
+        include: { linea: true, recetas: { where: { activa: true }, take: 1, include: { items: { include: { insumo: true } } } } },
+      },
+    },
+  });
+  return categorias.map(({ productos, ...c }) => ({
+    ...c,
+    productos: productos.map(({ recetas: [r], linea, ...p }) => ({
+      ...p,
+      linea_nombre: linea?.nombre ?? null,
+      receta: r ? {
+        codigo: r.codigo, version: r.version, base_kg: r.base_kg,
+        items: r.items.map((i) => ({ codigo: i.insumo.codigo, nombre: i.insumo.nombre, tipo: i.insumo.tipo, unidad: i.insumo.unidad, cantidad_base: i.cantidad_base }))
+          .sort((a, b) => (a.tipo !== b.tipo ? (a.tipo === 'MP' ? -1 : 1) : a.tipo === 'MP' ? b.cantidad_base - a.cantidad_base : 0)),
+      } : null,
+    })),
+  }));
 }

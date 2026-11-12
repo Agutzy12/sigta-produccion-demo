@@ -21,4 +21,6 @@ export const fechaLarga = () => {
 };
 /** Lee un número escrito por el usuario (acepta coma decimal). Vacío o inválido = NaN. */
 export const leerNumero = (v: unknown) => { const t = String(v ?? '').trim(); return t === '' ? NaN : Number(t.replace(',', '.')); };
+/** Peso de una presentación: 0.5 -> "500 g", 20 -> "20 kg". */
+export const pesoTexto = (kgUnidad: number) => (kgUnidad < 1 ? `${Math.round(kgUnidad * 1000)} g` : `${num(kgUnidad, Number.isInteger(kgUnidad) ? 0 : 1)} kg`);
 export const plural = (n: number, singular: string, pluralTexto = `${singular}s`) => `${n} ${n === 1 ? singular : pluralTexto}`;

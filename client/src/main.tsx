@@ -6,6 +6,9 @@ import { App } from './App';
 import { ProveedorSesion } from './contexto/Sesion';
 import { ProveedorDialogos } from './contexto/Dialogos';
 import { ProveedorTema } from './contexto/Tema';
+import { prepararApp } from './lib/instalar';
+
+prepararApp();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

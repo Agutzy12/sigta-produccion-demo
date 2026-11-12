@@ -21,7 +21,6 @@ export const DURACION_SESION = '10h';
 export const PLANTA = 'Planta principal';
 export const OBJETIVO_DIARIO_KG = 4000; // objetivo de producción neta por día (Panel)
 export const PRIMERA_OP = 111; // la primera orden de los datos de ejemplo es OP-AAAA-00111
-export const BULTOS_POR_PALLET = 25; // bolsas por pallet
 export const FORMULARIO_CALIDAD = 'R.BPM.01V01';
 
 /** Contraseña de los usuarios de ejemplo (sólo para la demo). */

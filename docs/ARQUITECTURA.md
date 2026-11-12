@@ -24,7 +24,9 @@
 ```
 
 Es una arquitectura **cliente-servidor en tres capas** (presentación, lógica de negocio y datos) con una **API REST**.
-En producción, el mismo servidor entrega las pantallas compiladas y la API, así que se publica como un único servicio web.
+En **Vercel**, las pantallas se sirven como archivos estáticos y la API corre como una función (`api/index.js`) que usa la misma
+aplicación Express; la base es PostgreSQL en **Neon**. La interfaz es una **aplicación web instalable (PWA)**: se instala en la PC,
+el celular o las colectoras Zebra y abre como una app, sin depender de un navegador abierto.
 
 ## Por qué cada tecnología
 
@@ -39,10 +41,13 @@ En producción, el mismo servidor entrega las pantallas compiladas y la API, as�
 | **Tailwind CSS** | Los colores de la marca son variables (modo claro/oscuro) y están disponibles como clases. | CSS a mano. |
 | **bwip-js** | Dibuja códigos GS1-128 reales en el navegador (sin servicios externos). | — |
 | **Vitest, Supertest, Playwright** | Pruebas automáticas de la API contra PostgreSQL real y del recorrido completo en el navegador. | Jest, Cypress. |
+| **PWA** (manifest + service worker) | El sistema se instala como aplicación en cualquier dispositivo sin publicarla en tiendas, y se actualiza sola. | App nativa (Android/iOS): dos desarrollos más. |
+| **Vercel + Neon** | Publicación automática en cada cambio de GitHub; PostgreSQL gestionado con copias de seguridad. | Render, servidor propio. |
 
 ## Modelo de datos
 
 ```
+categoria (5 líneas de la web) ──< producto
 linea ──< producto ──< receta ──< receta_item >── insumo ──< partida_insumo
                 │                                   │              │
                 └──< orden_produccion ──< op_item >─┘              │
@@ -56,6 +61,13 @@ linea ──< producto ──< receta ──< receta_item >── insumo ──<
 ```
 
 Detalle de columnas: `server/prisma/schema.prisma`.
+
+### Catálogo
+Cada **presentación** del catálogo de agrifood-argentina.com es un producto (SKU): "Coditos 500 g" o "Nueces 5 kg".
+El producto guarda la ficha que publica la web (presentación, vida útil, ingredientes, alérgenos, almacenamiento, embalaje,
+palletizado) y el enlace a su página. Las pre mezclas y pre elaborados usan como insumo los deshidratados de la propia planta
+(integración vertical). En los deshidratados, la merma de proceso es el agua que se evapora (por ejemplo, 11,5 kg de espinaca fresca
+por cada kg deshidratado).
 
 ### Estados
 
@@ -89,5 +101,5 @@ y separador GS), así que escanear una etiqueta lleva directo a la ficha del lot
 
 | Tipo | Herramienta | Qué cubre |
 |---|---|---|
-| API | Vitest + Supertest (`server/test`) | 28 pruebas: sesión y permisos, cálculo de recetas, FEFO, circuito completo, rechazo, bloqueo, triggers, concurrencia, GS1 |
-| Navegador | Playwright (`client/e2e`) | 8 recorridos: ingreso, circuito completo con los 3 roles, bloqueo, rechazo, Gerencia sólo lectura, escaneo GS1, modo oscuro, celular |
+| API | Vitest + Supertest (`server/test`) | 30 pruebas: catálogo de la web, sesión y permisos, cálculo de recetas, FEFO, circuito completo, rechazo, bloqueo, triggers, concurrencia, GS1 |
+| Navegador | Playwright (`client/e2e`) | 10 recorridos: ingreso, circuito completo con los 3 roles, bloqueo, rechazo, catálogo, app instalable, Gerencia sólo lectura, escaneo GS1, modo oscuro, celular |

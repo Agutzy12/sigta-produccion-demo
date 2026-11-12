@@ -13,6 +13,7 @@ import { CLAVE_DEMO, USUARIOS_DEMO } from '../config.js';
 import { auditar, aFechaDb, fechaLocal, type UsuarioActual } from '../services/comun.js';
 import { cifrar } from '../services/auth.js';
 import { armarGtin13 } from '../services/gs1.js';
+import { CATEGORIAS, ESPECIFICACION, INSUMOS, LINEAS, PARTIDAS, PRODUCTOS, SALDOS_FINALES, recetaDe, urlProducto } from './catalogo.js';
 import * as ordenes from '../services/ordenes.js';
 import * as calidad from '../services/calidad.js';
 import * as deposito from '../services/deposito.js';
@@ -28,7 +29,7 @@ const DIEGO = persona('DEPOSITO');
 /** Tablas de datos (todas menos usuario), en orden para vaciarlas. */
 const TABLAS = [
   'auditoria', 'despacho', 'pallet', 'stock_pt', 'control_calidad', 'lote_produccion', 'consumo',
-  'op_item', 'orden_produccion', 'partida_insumo', 'receta_item', 'receta', 'insumo', 'producto', 'linea',
+  'op_item', 'orden_produccion', 'partida_insumo', 'receta_item', 'receta', 'insumo', 'producto', 'linea', 'categoria',
 ];
 
 /* ------------------------------------------------------------------ */
@@ -47,90 +48,44 @@ export async function cargarUsuarios() {
 }
 
 /* ------------------------------------------------------------------ */
-/* 2) Catálogo                                                          */
+/* 2) Catálogo (el de agrifood-argentina.com, ver catalogo.ts)          */
 /* ------------------------------------------------------------------ */
 
+const sumarDias = (dias: number) => { const d = new Date(); d.setDate(d.getDate() + dias); return fechaLocal(d); };
+
 async function cargarCatalogo() {
-  await prisma.linea.createMany({ data: [{ id: 1, nombre: 'Línea de mezclado 1' }, { id: 2, nombre: 'Línea de mezclado 2' }] });
-
-  // id, código, nombre, línea sugerida, color esperado. GTIN de ejemplo con prefijo argentino 779.
-  const productos: [number, string, string, number, string][] = [
-    [1, 'MRC01', 'Mezcla rebozadora clásica', 1, 'Crema uniforme'],
-    [2, 'PPN02', 'Premezcla para pan', 2, 'Blanco crema'],
-    [3, 'RMA03', 'Rebozador de maíz', 1, 'Amarillo uniforme'],
-    [4, 'MML01', 'Mezcla para milanesas', 2, 'Crema uniforme'],
-    [5, 'PPI02', 'Premezcla para pizza', 2, 'Blanco crema'],
-  ];
-  // bolsas de 20 kg, vida útil 6 meses, especificación de ejemplo: humedad ≤ 14 %, pH 5,5–7,0, ≤ 10.000 UFC/g
+  await prisma.categoria.createMany({ data: CATEGORIAS });
+  await prisma.linea.createMany({ data: LINEAS });
   await prisma.producto.createMany({
-    data: productos.map(([id, codigo, nombre, linea_id, color_esperado]) => ({
-      id, codigo, nombre, linea_id, color_esperado, gtin: armarGtin13(`77912345000${id}`),
-      presentacion_kg: 20, vida_util_meses: 6, humedad_max: 14, ph_min: 5.5, ph_max: 7, ufc_max: 10000,
-    })),
+    data: PRODUCTOS.map((d) => {
+      const esp = ESPECIFICACION[d.categoria];
+      return {
+        id: d.id, codigo: d.codigo, nombre: d.nombre, gtin: armarGtin13(`7791234500${String(d.id).padStart(2, '0')}`),
+        categoria_id: CATEGORIAS.find((c) => c.codigo === d.categoria)!.id, presentacion: d.presentacion, linea_id: esp.linea_id,
+        presentacion_kg: d.presentacion_kg, unidades_por_caja: d.unidades_por_caja, unidades_por_pallet: d.unidades_por_pallet,
+        raciones: d.raciones, ingredientes: d.ingredientes, alergenos: d.alergenos, almacenamiento: d.almacenamiento,
+        embalaje: d.embalaje, url_web: urlProducto(d), vida_util_meses: 12, color_esperado: d.color,
+        humedad_max: d.humedad_max ?? esp.humedad_max, ph_min: d.ph?.[0] ?? esp.ph_min, ph_max: d.ph?.[1] ?? esp.ph_max, ufc_max: esp.ufc_max,
+      };
+    }),
   });
-
-  // id, código, nombre, tipo, unidad, crítico, stock mínimo
-  const insumos: [number, string, string, 'MP' | 'ME', string, boolean, number][] = [
-    [1, 'MP-001', 'Harina de trigo', 'MP', 'kg', true, 500],
-    [2, 'MP-002', 'Harina de maíz', 'MP', 'kg', true, 200],
-    [3, 'MP-003', 'Sal fina', 'MP', 'kg', true, 50],
-    [4, 'MP-004', 'Mezcla de especias', 'MP', 'kg', true, 30],
-    [5, 'MP-005', 'Almidón', 'MP', 'kg', true, 150],
-    [6, 'MP-006', 'Levadura seca', 'MP', 'kg', true, 20],
-    [7, 'MP-007', 'Azúcar', 'MP', 'kg', true, 50],
-    [8, 'ENV-020', 'Bolsa kraft de 20 kg', 'ME', 'un.', true, 100],
-    [9, 'ETQ-MRC', 'Etiqueta de producto', 'ME', 'un.', true, 100],
-    [10, 'ETQ-PPN', 'Etiqueta de producto', 'ME', 'un.', true, 100],
-    [11, 'ETQ-RMA', 'Etiqueta de producto', 'ME', 'un.', true, 100],
-    [12, 'ETQ-MML', 'Etiqueta de producto', 'ME', 'un.', true, 100],
-    [13, 'ETQ-PPI', 'Etiqueta de producto', 'ME', 'un.', true, 100],
-    [14, 'FIL-STR', 'Film estirable para pallets', 'ME', 'rollos', false, 20],
-  ];
   await prisma.insumo.createMany({
-    data: insumos.map(([id, codigo, nombre, tipo, unidad, critico, stock_minimo]) => ({ id, codigo, nombre, tipo, unidad, critico, stock_minimo })),
+    data: INSUMOS.map(([id, codigo, nombre, tipo, unidad, critico, stock_minimo]) => ({ id, codigo, nombre, tipo, unidad, critico, stock_minimo })),
   });
-
-  // Recetas: cantidades cada 100 kg de producto. id receta = id producto.
-  const recetas: [number, string, number, string, [number, number][]][] = [
-    [1, 'REC-MRC01', 3, '2026-09-01', [[1, 85], [2, 10], [3, 3], [4, 2], [8, 5], [9, 5]]],
-    [2, 'REC-PPN02', 2, '2026-08-15', [[1, 90], [3, 2], [6, 3], [7, 5], [8, 5], [10, 5]]],
-    [3, 'REC-RMA03', 1, '2026-07-01', [[2, 70], [1, 20], [3, 5], [4, 5], [8, 5], [11, 5]]],
-    [4, 'REC-MML01', 2, '2026-08-01', [[1, 70], [5, 20], [3, 5], [4, 5], [8, 5], [12, 5]]],
-    [5, 'REC-PPI02', 1, '2026-07-15', [[1, 85], [6, 3], [3, 2], [7, 5], [5, 5], [8, 5], [13, 5]]],
-  ];
-  for (const [id, codigo, version, desde, items] of recetas) {
+  // Recetas: cantidades cada 100 kg de producto. id de receta = id de producto.
+  for (const d of PRODUCTOS) {
     await prisma.receta.create({
       data: {
-        id, codigo, producto_id: id, version, vigente_desde: aFechaDb(desde), base_kg: 100, activa: true,
-        items: { create: items.map(([insumo_id, cantidad_base]) => ({ insumo_id, cantidad_base })) },
+        id: d.id, codigo: `REC-${d.codigo}`, producto_id: d.id, version: 1, vigente_desde: aFechaDb('2026-07-01'), base_kg: 100, activa: true,
+        items: { create: recetaDe(d).map(([insumo_id, cantidad_base]) => ({ insumo_id, cantidad_base })) },
       },
     });
   }
-
-  // Partidas de proveedor: [insumo, lote de origen, proveedor, vencimiento, remito]
-  const partidas: [number, string, string, string | null, string][] = [
-    [1, 'MF-261001', 'Molinos Florencia SAU', '2027-04-01', 'REM-MF-261001'],
-    [1, 'MF-261015', 'Molinos Florencia SAU', '2027-04-15', 'REM-MF-261015'],
-    [1, 'MF-261020', 'Molinos Florencia SAU', '2027-05-10', 'REM-MF-261020'],
-    [2, 'HM-261012', 'Maíces del Sur S.A.', '2027-04-12', 'REM-MS-261012'],
-    [3, 'SAL-261005', 'Salinas del Centro S.R.L.', '2028-10-05', 'REM-SC-261005'],
-    [4, 'ESP-261008', 'Aromas del Campo S.R.L.', '2027-10-08', 'REM-AC-261008'],
-    [5, 'ALM-261003', 'Almidones del Litoral S.A.', '2027-08-03', 'REM-AL-261003'],
-    [6, 'LEV-261009', 'Levaduras Pampeanas S.A.', '2027-03-09', 'REM-LP-261009'],
-    [7, 'AZU-261011', 'Azucarera del Norte S.A.', '2028-02-11', 'REM-AN-261011'],
-    [8, 'ENV-261010', 'Cartocor S.A.', null, 'REM-CA-261010'],
-    [9, 'ETQ-261010', 'Etiquetas del Centro S.A.', null, 'REM-EC-261010'],
-    [10, 'ETQ-261011', 'Etiquetas del Centro S.A.', null, 'REM-EC-261011'],
-    [11, 'ETQ-261012', 'Etiquetas del Centro S.A.', null, 'REM-EC-261012'],
-    [12, 'ETQ-261013', 'Etiquetas del Centro S.A.', null, 'REM-EC-261013'],
-    [13, 'ETQ-261014', 'Etiquetas del Centro S.A.', null, 'REM-EC-261014'],
-    [14, 'FIL-261002', 'Plásticos Industriales S.A.', null, 'REM-PI-261002'],
-  ];
   // Arrancan con un saldo enorme para que el historial pueda consumir sin problemas.
   // Al terminar el historial se ajustan al saldo real (ver ajustarSaldosFinales).
   await prisma.partidaInsumo.createMany({
-    data: partidas.map(([insumo_id, nro_lote, proveedor, vence, documento_origen]) => ({
-      insumo_id, nro_lote, proveedor, cantidad: 1_000_000, vencimiento: vence ? aFechaDb(vence) : null,
+    data: PARTIDAS.map(([insumo_id, nro_lote, proveedor, dias, documento_origen]) => ({
+      insumo_id, nro_lote, proveedor, cantidad: 1_000_000, vencimiento: dias === null ? null : aFechaDb(sumarDias(dias)),
       documento_origen, estado: 'LIBERADO' as const, ingreso: ahora(),
     })),
   });
@@ -138,15 +93,7 @@ async function cargarCatalogo() {
 
 /** Stock con el que arranca la demo (después del historial). */
 async function ajustarSaldosFinales() {
-  const saldos: Record<string, number> = {
-    'MF-261001': 500, 'MF-261015': 3000, 'MF-261020': 2500, // harina de trigo
-    'HM-261012': 900, 'SAL-261005': 300, 'ESP-261008': 150,
-    'ALM-261003': 80, // almidón: queda por debajo del mínimo (150)
-    'LEV-261009': 60, 'AZU-261011': 200, 'ENV-261010': 480,
-    'ETQ-261010': 400, 'ETQ-261011': 300, 'ETQ-261012': 300, 'ETQ-261013': 300, 'ETQ-261014': 300,
-    'FIL-261002': 12, // film: por debajo del mínimo (20)
-  };
-  for (const [nro_lote, cantidad] of Object.entries(saldos)) {
+  for (const [nro_lote, cantidad] of Object.entries(SALDOS_FINALES)) {
     await prisma.partidaInsumo.updateMany({ where: { nro_lote }, data: { cantidad } });
   }
 }
@@ -209,7 +156,7 @@ async function cargarHistorial() {
     }
 
     avanzar(100);
-    const bultos = Math.round((o.kg * 0.98) / prod.presentacion_kg); // merma de proceso de alrededor del 2 %
+    const bultos = Math.round((o.kg * 0.98) / prod.presentacion_kg); // se obtiene alrededor del 98 % del objetivo
     const enCurso = await ordenes.getOrden(orden.id);
     const fin = await ordenes.finalizarElaboracion(MARTIN, orden.id, {
       consumos: enCurso.consumo_sugerido!, cantidad_real_kg: bultos * prod.presentacion_kg, bultos,
@@ -217,7 +164,10 @@ async function cargarHistorial() {
     if (o.hasta === 'CUARENTENA') return fin;
 
     avanzar(65);
-    const ensayo = { humedad: 12.4, ph: 6.2, aroma: 'Característico', color: prod.color_esperado, sabor: 'Característico', ufc: 320 };
+    const ensayo = {
+      humedad: Math.round(prod.humedad_max * 0.75 * 10) / 10, ph: Math.round(((prod.ph_min + prod.ph_max) / 2) * 10) / 10,
+      aroma: 'Característico', color: prod.color_esperado, sabor: 'Característico', ufc: 320,
+    };
     if (o.hasta === 'RECHAZADA') {
       await calidad.registrarControlCalidad(LUCIA, fin.lote_id, {
         ...ensayo, ufc: 45000, dictamen: 'RECHAZAR_BLOQUEAR',
@@ -231,7 +181,7 @@ async function cargarHistorial() {
     if (o.hasta === 'LIBERADO') return fin;
 
     avanzar(45);
-    const rack = ({ MRC01: 'A02', PPN02: 'A01', RMA03: 'A03', MML01: 'A04', PPI02: 'A05' } as Record<string, string>)[o.producto];
+    const rack = ['A01', 'B01', 'B03', 'A04', 'A03', 'A02'][prod.categoria_id ?? 0];
     await deposito.ingresarProductoTerminado(DIEGO, {
       op_id: orden.id, bultos_recibidos: bultos, kg_conformes: bultos * prod.presentacion_kg, bultos_danados: 0, merma_kg: 0,
       deposito: 'Producto terminado', sector: 'Secos · Ambiente', rack, nivel: '02',
@@ -243,47 +193,47 @@ async function cargarHistorial() {
     return fin;
   }
 
-  const obs = 'Elaboración del turno mañana. Presentación en bolsas de 20 kg; verificar limpieza de línea antes del inicio.';
+  const obs = 'Elaboración del turno mañana. Verificar limpieza de línea y cambio de envase antes del inicio.';
 
-  // Semana anterior: sirve para calcular la variación del gráfico "Producción reciente"
-  await simular({ atras: 9, hora: '07:00', producto: 'MRC01', kg: 1000, hasta: 'FINALIZADA' });
-  await simular({ atras: 8, hora: '07:00', producto: 'PPN02', kg: 800, hasta: 'FINALIZADA' });
-  await simular({ atras: 7, hora: '07:00', producto: 'MML01', kg: 750, hasta: 'FINALIZADA' });
-  await simular({ atras: 6, hora: '07:00', producto: 'RMA03', kg: 600, hasta: 'FINALIZADA' });
-  await simular({ atras: 6, hora: '10:00', producto: 'PPI02', kg: 500, hasta: 'FINALIZADA' });
+  // Semana anterior: sirve para calcular la variación del gráfico de producción reciente
+  await simular({ atras: 9, hora: '07:00', producto: 'COD500', kg: 1200, hasta: 'FINALIZADA' });
+  await simular({ atras: 8, hora: '07:00', producto: 'PIZ500', kg: 600, hasta: 'FINALIZADA' });
+  await simular({ atras: 7, hora: '07:00', producto: 'AJOE20', kg: 200, hasta: 'FINALIZADA' });
+  await simular({ atras: 6, hora: '07:00', producto: 'SPA500', kg: 1200, hasta: 'FINALIZADA' });
+  await simular({ atras: 6, hora: '10:00', producto: 'ARZ8K', kg: 400, hasta: 'FINALIZADA' });
 
   // Días anteriores: producción terminada
-  await simular({ atras: 5, hora: '07:00', producto: 'PPN02', kg: 800, hasta: 'FINALIZADA' });
-  await simular({ atras: 5, hora: '09:30', producto: 'MRC01', kg: 1000, hasta: 'FINALIZADA' });
-  await simular({ atras: 5, hora: '12:00', producto: 'RMA03', kg: 600, hasta: 'FINALIZADA' });
-  await simular({ atras: 4, hora: '07:00', producto: 'MML01', kg: 750, hasta: 'FINALIZADA' });
-  await simular({ atras: 4, hora: '10:00', producto: 'PPI02', kg: 500, hasta: 'FINALIZADA' });
-  await simular({ atras: 4, hora: '12:30', producto: 'MRC01', kg: 1000, hasta: 'FINALIZADA' });
-  await simular({ atras: 3, hora: '07:00', producto: 'PPN02', kg: 800, hasta: 'FINALIZADA' });
-  await simular({ atras: 3, hora: '09:30', producto: 'MRC01', kg: 1000, hasta: 'FINALIZADA' });
-  await simular({ atras: 3, hora: '12:00', producto: 'RMA03', kg: 800, hasta: 'FINALIZADA' });
-  await simular({ atras: 2, hora: '07:00', producto: 'MML01', kg: 750, hasta: 'FINALIZADA', despachoKg: 300 });
-  const pendiente1 = await simular({ atras: 2, hora: '10:00', producto: 'PPI02', kg: 500, hasta: 'CUARENTENA' });
-  const pendiente2 = await simular({ atras: 1, hora: '13:00', producto: 'MRC01', kg: 1000, hasta: 'CUARENTENA' });
-  await simular({ atras: 1, hora: '11:00', producto: 'RMA03', kg: 400, hasta: 'CANCELADA' });
-  await simular({ atras: 1, hora: '10:00', producto: 'PPN02', kg: 600, hasta: 'RECHAZADA' });
-  await simular({ atras: 1, hora: '08:00', producto: 'MML01', kg: 750, hasta: 'LIBERADO' }); // espera recepción en depósito
+  await simular({ atras: 5, hora: '07:00', producto: 'BIZC500', kg: 500, hasta: 'FINALIZADA' });
+  await simular({ atras: 5, hora: '09:30', producto: 'NUE120', kg: 240, hasta: 'FINALIZADA' });
+  await simular({ atras: 5, hora: '12:00', producto: 'ESPE10', kg: 100, hasta: 'FINALIZADA' });
+  await simular({ atras: 4, hora: '07:00', producto: 'RIG500', kg: 1000, hasta: 'FINALIZADA' });
+  await simular({ atras: 4, hora: '10:00', producto: 'PUR4K', kg: 450, hasta: 'FINALIZADA' });
+  await simular({ atras: 4, hora: '12:30', producto: 'NOQ500', kg: 500, hasta: 'FINALIZADA' });
+  await simular({ atras: 3, hora: '07:00', producto: 'TIR500', kg: 1000, hasta: 'FINALIZADA' });
+  await simular({ atras: 3, hora: '09:30', producto: 'LEN8K', kg: 400, hasta: 'FINALIZADA' });
+  await simular({ atras: 3, hora: '12:00', producto: 'TOME20', kg: 200, hasta: 'FINALIZADA' });
+  await simular({ atras: 2, hora: '07:00', producto: 'COD500', kg: 1200, hasta: 'FINALIZADA', despachoKg: 300 });
+  const pendiente1 = await simular({ atras: 2, hora: '10:00', producto: 'BUN200', kg: 160, hasta: 'CUARENTENA' });
+  const pendiente2 = await simular({ atras: 1, hora: '13:00', producto: 'SPA500', kg: 1200, hasta: 'CUARENTENA' });
+  await simular({ atras: 1, hora: '11:00', producto: 'PAS120', kg: 120, hasta: 'CANCELADA' });
+  await simular({ atras: 1, hora: '10:00', producto: 'PIZ500', kg: 600, hasta: 'RECHAZADA' });
+  await simular({ atras: 1, hora: '08:00', producto: 'ZANC20', kg: 200, hasta: 'LIBERADO' }); // espera recepción en depósito
 
   // Hoy
-  await simular({ atras: 0, hora: '06:00', producto: 'RMA03', kg: 600, hasta: 'CUARENTENA' });
-  await simular({ atras: 0, hora: '07:00', producto: 'PPN02', kg: 800, hasta: 'PAUSADA' });
+  await simular({ atras: 0, hora: '06:00', producto: 'ARZ240', kg: 240, hasta: 'CUARENTENA' });
+  await simular({ atras: 0, hora: '07:00', producto: 'COD500', kg: 1200, hasta: 'PAUSADA' });
 
   // Dos lotes viejos ya tienen el análisis empezado (borrador guardado); el de hoy todavía no
   for (const lote of [pendiente1, pendiente2]) {
-    await calidad.guardarBorrador(LUCIA, lote!.lote_id, { humedad: 12.6, ph: 6.3, aroma: 'Característico' });
+    await calidad.guardarBorrador(LUCIA, lote!.lote_id, { humedad: 8.2, ph: 6.3, aroma: 'Característico' });
   }
 
   // El stock con el que arranca la demo se fija acá, antes de las últimas órdenes
   await ajustarSaldosFinales();
 
-  await simular({ atras: 0, hora: '08:30', producto: 'MRC01', kg: 1000, hasta: 'PLANIFICADA', observaciones: obs });
-  await simular({ atras: 0, hora: '11:30', producto: 'MML01', kg: 750, hasta: 'CREADA', observaciones: 'Falta almidón: esperando reposición.' });
-  await simular({ atras: 0, hora: '12:00', producto: 'MRC01', kg: 1000, hasta: 'PLANIFICADA', observaciones: obs });
+  await simular({ atras: 0, hora: '08:30', producto: 'SPA500', kg: 1000, hasta: 'PLANIFICADA', observaciones: obs });
+  await simular({ atras: 0, hora: '11:30', producto: 'BUN5K', kg: 400, hasta: 'CREADA', observaciones: 'Falta huevo en polvo: esperando reposición.' });
+  await simular({ atras: 0, hora: '12:00', producto: 'AJOP20', kg: 200, hasta: 'PLANIFICADA', observaciones: 'Usar primero la partida de ajo que vence antes.' });
 }
 
 /* ------------------------------------------------------------------ */

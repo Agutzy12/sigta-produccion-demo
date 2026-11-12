@@ -5,12 +5,14 @@
 // prisma/migrations/*_reglas_de_negocio/migration.sql
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"] // "native" = tu PC; rhel = servidores de Vercel
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // conexión de la aplicación (en la nube, con pool)
+  directUrl = env("DATABASE_URL_UNPOOLED") // conexión directa, para aplicar migraciones
 }
 
 /// Perfiles de usuario. Cada rol sólo puede ejecutar los casos de uso que le corresponden.
@@ -72,21 +74,46 @@ model Usuario {
 model Linea {
   id        Int               @id
   nombre    String
+  proceso   String            @default("") // mezclado, extrusión y secado, deshidratado, fraccionamiento
   productos Producto[]
   ordenes   OrdenProduccion[]
 
   @@map("linea")
 }
 
+/// Líneas comerciales del catálogo de agrifood-argentina.com (Deshidratados, Frutos secos, Pre elaborados, Pre mezclas, Pastas secas)
+model Categoria {
+  id        Int        @id
+  codigo    String     @unique // DESHIDRATADOS, FRUTOS_SECOS...
+  nombre    String // "Línea Deshidratados"
+  familia   String // "Línea Tierra" o "Línea Molino", como en la web
+  url_web   String? // página de la línea en agrifood-argentina.com
+  productos Producto[]
+
+  @@map("categoria")
+}
+
+/// Cada presentación del catálogo es un producto (SKU): "Coditos 500 g" y "Nueces 5 kg" son productos distintos.
 model Producto {
-  id               Int               @id
-  codigo           String            @unique // MRC01, PPN02...
-  gtin             String            @unique // código de artículo GS1 (13 dígitos)
-  nombre           String
-  linea_id         Int?
-  linea            Linea?            @relation(fields: [linea_id], references: [id])
-  presentacion_kg  Float // kg por bolsa
-  vida_util_meses  Int
+  id                  Int               @id
+  codigo              String            @unique // COD500, NUE120... (corto: entra en el código de lote)
+  gtin                String            @unique // código de artículo GS1 (13 dígitos, de ejemplo)
+  nombre              String // como figura en la web: "Coditos"
+  categoria_id        Int?
+  categoria           Categoria?        @relation(fields: [categoria_id], references: [id])
+  presentacion        String            @default("") // texto de la web: "500 g", "Flow Pack 120 g", "8 kg / 100 raciones"
+  linea_id            Int? // línea de elaboración sugerida
+  linea               Linea?            @relation(fields: [linea_id], references: [id])
+  presentacion_kg     Float // peso neto de cada unidad (bolsa, paquete, caja)
+  unidades_por_caja   Int? // pack de venta (por ejemplo, 24 paquetes)
+  unidades_por_pallet Int               @default(25) // palletizado de la web (por ejemplo, 40 bolsas = 800 kg)
+  raciones            Int? // pre elaborados: raciones por unidad
+  ingredientes        String?
+  alergenos           String?
+  almacenamiento      String?
+  embalaje            String?
+  url_web             String? // ficha del producto en agrifood-argentina.com
+  vida_util_meses     Int
   humedad_max      Float // especificación de ejemplo para Calidad
   ph_min           Float
   ph_max           Float

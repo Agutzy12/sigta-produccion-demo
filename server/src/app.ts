@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { crearRouter } from './rutas.js';
 import { HttpError, errorDeRegla } from './errores.js';
+import { hayBaseConfigurada } from './db.js';
 
 export function crearApp() {
   const app = express();
@@ -18,6 +19,11 @@ export function crearApp() {
     next();
   });
 
+  // Si el servidor se publicó sin base de datos, se avisa con un mensaje claro en vez de un error genérico
+  app.use('/api', (_req, res, next) => {
+    if (hayBaseConfigurada()) return next();
+    res.status(503).json({ error: 'Falta configurar la base de datos (variable DATABASE_URL). Ver docs/DESPLIEGUE.md.' });
+  });
   app.use('/api', crearRouter());
   app.use('/api', (_req, res) => { res.status(404).json({ error: 'Ruta inexistente' }); });
 

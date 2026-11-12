@@ -30,6 +30,8 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page.locator('.marca')).toContainText('Gestión y Trazabilidad Alimentaria');
   await page.getByRole('link', { name: /Nueva orden/ }).click();
   await expect(page.getByText('Paso 1 de 4 · Planificar orden')).toBeVisible();
+  await expect(page.getByLabel('Producto terminado *')).toHaveValue('28'); // Coditos 500 g
+  await expect(page.getByTestId('ficha-producto')).toContainText('Línea Pastas Secas');
   await page.getByLabel('Cantidad *').fill('1000');
   await expect(page.getByText('Sin faltantes')).toBeVisible();
   // con una cantidad enorme no deja planificar
@@ -43,9 +45,9 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   // 2) Elaborar
   await expect(page).toHaveURL(/\/ejecucion\/\d+/);
   await page.getByRole('button', { name: 'Iniciar elaboración' }).click();
-  await expect(page.getByText(/Elaboración iniciada · lote L-MRC01-/)).toBeVisible();
+  await expect(page.getByText(/Elaboración iniciada · lote L-COD500-/)).toBeVisible();
   await expect(page.getByText('Todos los lotes son válidos')).toBeVisible();
-  await expect(page.getByTestId('merma')).toContainText('2,00 %');
+  await expect(page.getByTestId('merma')).toContainText('2,97 %'); // 1.010 kg de sémola y harina → 980 kg de Coditos
   // pausar y reanudar la línea
   await page.getByRole('button', { name: 'Pausar línea' }).click();
   await expect(page.getByText(/Línea pausada ·/)).toBeVisible();
@@ -54,7 +56,7 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await page.getByRole('button', { name: 'Finalizar y enviar a Calidad' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Finalizar y enviar a Calidad' }).click();
   await expect(page.getByRole('dialog', { name: 'Elaboración finalizada' })).toContainText('quedó en cuarentena');
-  const lote = (await page.getByRole('dialog').locator('b').first().innerText()).match(/L-MRC01-\d{6}-\d{2}/)![0];
+  const lote = (await page.getByRole('dialog').locator('b').first().innerText()).match(/L-COD500-\d{6}-\d{2}/)![0];
   await page.getByRole('button', { name: 'Ir a Control de calidad' }).click();
 
   // 3) Controlar calidad: Producción no puede firmar; cambia a Técnica de calidad desde la guía
@@ -78,12 +80,12 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page).toHaveURL(/\/deposito\/\d+/);
   await page.getByRole('button', { name: /Cambiar a Operario de depósito/ }).click();
   await expect(page.getByText('Liberación verificada')).toBeVisible();
-  await expect(page.locator('#pallets')).toHaveValue('2');
+  await expect(page.locator('#pallets')).toHaveValue('4'); // 1.960 paquetes, 600 por pallet (palletizado de la web)
   await page.getByRole('button', { name: 'Confirmar ingreso y cerrar OP' }).click();
   const confirmacion = page.getByRole('dialog', { name: 'Ingreso confirmado' });
   await expect(confirmacion).toContainText('Circuito completo');
   // las etiquetas GS1-128 se dibujan con su código de barras
-  await expect(confirmacion.locator('.etiqueta')).toHaveCount(2);
+  await expect(confirmacion.locator('.etiqueta')).toHaveCount(4);
   await expect(confirmacion.locator('.etiqueta svg').first()).toBeVisible();
   await expect(confirmacion.locator('.etiqueta').first()).toHaveAttribute('data-gs1', new RegExp(`\\(10\\)${lote}$`));
   await page.getByRole('button', { name: 'Ver trazabilidad' }).click();
@@ -92,7 +94,7 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page.getByRole('heading', { name: 'Recorrido del lote' })).toBeVisible();
   await expect(page.locator('.recorrido')).toContainText('Aprobado y liberado');
   await expect(page.locator('.recorrido')).toContainText('Stock vendible');
-  await expect(page.getByText('Molinos Florencia SAU')).toBeVisible();
+  await expect(page.getByText('Molinos Florencia SAU').first()).toBeVisible();
   await page.getByText('Ver historial del lote (auditoría)').click();
   await expect(page.getByRole('cell', { name: 'Firma de protocolo de calidad' })).toBeVisible();
 });
@@ -125,6 +127,33 @@ test('rechazo: un lote fuera de especificación se bloquea y exige el motivo', a
   await expect(page.getByRole('dialog', { name: 'Lote rechazado y bloqueado' })).toBeVisible();
   await page.getByRole('button', { name: 'Ver trazabilidad' }).click();
   await expect(page.locator('.tarjeta').first()).toContainText('Rechazado y bloqueado');
+});
+
+test('el catálogo es el de la web de Agrifood y permite planificar un producto', async ({ page }) => {
+  await ingresarComo(page, /Supervisor de producción/);
+  await page.locator('.sidebar').getByRole('link', { name: 'Catálogo de productos' }).click();
+  await expect(page.getByRole('heading', { name: 'Catálogo de productos' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Todas · 31' })).toBeVisible();
+  await page.getByRole('button', { name: /^Deshidratados · 9/ }).click();
+  const fila = page.getByRole('row', { name: /Espinaca Deshidratada en Escamas/ });
+  await expect(fila).toContainText('36 × 10 kg');
+  await fila.getByRole('button', { name: 'Ficha y receta →' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Spinacea oleracea');
+  await expect(page.getByRole('dialog')).toContainText('Espinaca fresca');
+  await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click();
+  await fila.getByRole('link', { name: 'Planificar →' }).click();
+  await expect(page.getByLabel('Producto terminado *')).toHaveValue('3');
+  await expect(page.getByLabel('Cantidad *')).toHaveValue('200');
+  await expect(page.getByRole('link', { name: 'Ver en la web de Agrifood ↗' })).toHaveAttribute('href', 'https://agrifood-argentina.com/productos/deshidratados/espinaca-deshidratada-en-escamas.php');
+});
+
+test('se puede instalar como aplicación (manifest y service worker)', async ({ page, request }) => {
+  const manifest = await (await request.get('/manifest.webmanifest')).json();
+  expect(manifest).toMatchObject({ short_name: 'SIGTA', display: 'standalone', start_url: '/panel' });
+  expect((await request.get('/icons/icono-512.png')).ok()).toBeTruthy();
+  await page.goto('/ingresar');
+  const registrado = await page.evaluate(async () => { const r = await navigator.serviceWorker.ready; return Boolean(r.active); });
+  expect(registrado).toBe(true);
 });
 
 test('Gerencia sólo consulta: ve todo pero no puede registrar', async ({ page }) => {

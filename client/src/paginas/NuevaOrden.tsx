@@ -1,17 +1,26 @@
 /** Paso 1 · Planificar orden de producción (CU-P01). También completa un borrador (/ordenes/:id). */
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useDatos } from '../lib/useDatos';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
-import { hoyTexto, leerNumero, num } from '../lib/formato';
+import { hoyTexto, leerNumero, num, pesoTexto } from '../lib/formato';
 import type { Linea, Orden, Producto, Verificacion } from '../lib/tipos';
-import { Cabecera, Cargando, ConUnidad, ErrorCarga, Miga, Pill, Termino, Vacio } from '../componentes/Comunes';
+import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, Termino, Vacio } from '../componentes/Comunes';
 import { Proceso } from '../componentes/Proceso';
 import { Icono } from '../componentes/Icono';
 
 const HORAS = Array.from({ length: 33 }, (_, i) => `${String(6 + Math.floor(i / 2)).padStart(2, '0')}:${i % 2 ? '30' : '00'}`);
+/** Cantidad sugerida al elegir un producto (lo habitual de cada línea, en kg de producto terminado). */
+const CANTIDAD_SUGERIDA: Record<string, number> = { DESHIDRATADOS: 200, FRUTOS_SECOS: 240, PRE_ELABORADOS: 400, PRE_MEZCLAS: 600, PASTAS_SECAS: 1000 };
+/** Agrupa los productos por línea comercial, en el orden del catálogo. */
+const porLinea = (productos: Producto[]) => productos.reduce<[string, Producto[]][]>((grupos, p) => {
+  const nombre = p.categoria_nombre ?? 'Otros';
+  const grupo = grupos.find(([n]) => n === nombre);
+  if (grupo) grupo[1].push(p); else grupos.push([nombre, [p]]);
+  return grupos;
+}, []);
 const horaSugerida = () => {
   const d = new Date();
   const ahora = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
@@ -37,10 +46,12 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
   const { aviso, error } = useDialogos();
   const navegar = useNavigate();
   const habilitado = puede('PRODUCCION');
+  const [parametros] = useSearchParams();
+  const inicial = productos.find((p) => p.id === Number(parametros.get('producto'))) ?? productos.find((p) => p.codigo === 'COD500') ?? productos[0];
   const [form, setForm] = useState({
-    producto_id: borrador?.producto_id ?? productos[0]?.id,
-    linea_id: borrador?.linea_id ?? productos[0]?.linea_id,
-    cantidad: String(borrador?.cantidad_kg ?? 1000),
+    producto_id: borrador?.producto_id ?? inicial?.id,
+    linea_id: borrador?.linea_id ?? inicial?.linea_id,
+    cantidad: String(borrador?.cantidad_kg ?? CANTIDAD_SUGERIDA[inicial?.categoria_codigo ?? ''] ?? 1000),
     fecha: borrador?.fecha_proyectada ?? hoyTexto(),
     hora: borrador?.hora_prevista ?? horaSugerida(),
     observaciones: borrador?.observaciones ?? '',
@@ -63,7 +74,8 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
   const cambiar = (campo: keyof typeof form, valor: string | number) => setForm((f) => ({ ...f, [campo]: valor }));
   const elegirProducto = (idProducto: number) => {
     const p = productos.find((x) => x.id === idProducto)!;
-    setForm((f) => ({ ...f, producto_id: idProducto, linea_id: p.linea_id })); // se sugiere la línea del producto
+    // se sugiere la línea de elaboración del producto y, en una orden nueva, la cantidad habitual de su línea
+    setForm((f) => ({ ...f, producto_id: idProducto, linea_id: p.linea_id, cantidad: borrador ? f.cantidad : String(CANTIDAD_SUGERIDA[p.categoria_codigo ?? ''] ?? f.cantidad) }));
   };
 
   const guardar = async (accion: 'PLANIFICAR' | 'BORRADOR') => {
@@ -84,8 +96,8 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
     } catch (e) { error(e); setGuardando(false); }
   };
 
-  const bolsas = verificacion?.items.find((i) => i.tipo === 'ME' && /bolsa/i.test(i.nombre));
-  const etiquetas = verificacion?.items.find((i) => i.tipo === 'ME' && /etiqueta/i.test(i.nombre));
+  const unidades = kgPedidos > 0 ? Math.round(kgPedidos / producto.presentacion_kg) : 0;
+  const pallets = unidades ? Math.ceil(unidades / producto.unidades_por_pallet) : 0;
 
   return (
     <>
@@ -98,7 +110,9 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
         <div className="rejilla col-3">
           <div className="campo"><label htmlFor="producto">Producto terminado *</label>
             <select className="entrada" id="producto" disabled={!habilitado} value={form.producto_id} onChange={(e) => elegirProducto(Number(e.target.value))}>
-              {productos.map((p) => <option key={p.id} value={p.id}>{p.codigo} · {p.nombre}</option>)}
+              {porLinea(productos).map(([linea, lista]) => (
+                <optgroup key={linea} label={linea}>{lista.map((p) => <option key={p.id} value={p.id}>{p.nombre} · {p.presentacion} ({p.codigo})</option>)}</optgroup>
+              ))}
             </select></div>
           <div className="campo"><label htmlFor="receta"><Termino t="receta">Receta</Termino> vigente</label>
             <ConUnidad unidad={<Icono n="candado" tam={16} />}><input className="entrada" id="receta" readOnly value={`${producto.receta_codigo} · Versión ${producto.receta_version}`} /></ConUnidad></div>
@@ -121,6 +135,22 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
           <input className="entrada" id="obs" maxLength={200} placeholder="Opcional" disabled={!habilitado} value={form.observaciones} onChange={(e) => cambiar('observaciones', e.target.value)} /></div>
       </section>
 
+      <section className="tarjeta" data-testid="ficha-producto">
+        <div className="tarjeta-cab">
+          <div><h2>{producto.nombre} · {producto.presentacion}</h2>
+            <p className="sub">{producto.categoria_nombre} · {producto.familia} · Vida útil {producto.vida_util_meses} meses · {producto.unidades_por_pallet} unidades por pallet{producto.unidades_por_caja ? ` · cajas de ${producto.unidades_por_caja}` : ''}</p></div>
+          {producto.url_web && <a className="btn chico" href={producto.url_web} target="_blank" rel="noreferrer">Ver en la web de Agrifood ↗</a>}
+        </div>
+        <details className="plegable" style={{ marginTop: 0 }}><summary>Ver ficha técnica (ingredientes, alérgenos, almacenamiento y embalaje)</summary>
+          <div className="rejilla col-2" style={{ marginTop: 10, gap: 14 }}>
+            <Dato titulo="Ingredientes">{producto.ingredientes ?? '—'}</Dato>
+            <Dato titulo="Alérgenos">{producto.alergenos ?? 'No declara'}</Dato>
+            <Dato titulo="Almacenamiento">{producto.almacenamiento ?? '—'}</Dato>
+            <Dato titulo="Embalaje">{producto.embalaje ?? '—'}</Dato>
+          </div>
+        </details>
+      </section>
+
       <div className="dos-col">
         <section className="tarjeta"><h2>Insumos necesarios</h2>
           <p className="sub">{kgPedidos > 0 ? `Calculado con la receta para ${num(kgPedidos)} kg. No cuenta el stock en cuarentena ni lo reservado por otras órdenes.` : ''}</p>
@@ -139,7 +169,7 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
                 </table>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontSize: 14, gap: 12, flexWrap: 'wrap' }}>
                   <b>Materias primas: {num(verificacion.kgMateriaPrima)} kg</b>
-                  <span style={{ color: 'var(--texto-suave)' }}>Empaque: {bolsas ? `${num(bolsas.requerido)} bolsas` : '—'}{etiquetas ? ` + ${num(etiquetas.requerido)} etiquetas` : ''}</span>
+                  <span style={{ color: 'var(--texto-suave)' }}>Se obtienen unas {num(unidades)} unidades de {pesoTexto(producto.presentacion_kg)} · {pallets} {pallets === 1 ? 'pallet' : 'pallets'}</span>
                 </div>
               </>)}
           </div>

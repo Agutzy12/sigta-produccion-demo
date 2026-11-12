@@ -103,7 +103,10 @@ function FormularioLote({ lote, alGuardar }: { lote: LoteCalidad; alGuardar: () 
     ufc: Number.isNaN(leerNumero(v.ufc)) ? '' : leerNumero(v.ufc), aroma: v.aroma, color: v.color, sabor: v.sabor, dictamen, observaciones: obs.trim(),
   });
   const cargarEjemplo = () => {
-    setV({ humedad: '12,4', ph: '6,2', ufc: '320', aroma: e.aroma.esperado, color: e.color.esperado, sabor: e.sabor.esperado });
+    // valores dentro de la especificación de ESTE producto (cada línea tiene la suya)
+    const humedad = (Math.round(e.humedad_max * 0.75 * 10) / 10).toString().replace('.', ',');
+    const ph = (Math.round(((e.ph_min + e.ph_max) / 2) * 10) / 10).toString().replace('.', ',');
+    setV({ humedad, ph, ufc: '320', aroma: e.aroma.esperado, color: e.color.esperado, sabor: e.sabor.esperado });
     if (!obs.trim()) setObs('Resultados dentro de la especificación de ejemplo. Evaluación sensorial conforme. Sin desvíos observados.');
   };
   const guardarBorrador = async () => {
