@@ -27,6 +27,17 @@ function evaluar(e: Especificacion, v: Valores): Resultados {
   };
 }
 
+const OBS_CONFORME = 'Resultados dentro de especificación. Evaluación sensorial conforme. Sin desvíos observados.';
+const coma = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
+
+/** Valores ideales para el producto: holgados dentro de los límites de SU especificación. */
+function valoresOptimos(e: Especificacion): Valores {
+  return {
+    humedad: coma(e.humedad_max * 0.75), ph: coma((e.ph_min + e.ph_max) / 2), ufc: String(Math.min(320, Math.round(e.ufc_max * 0.1))),
+    aroma: e.aroma.esperado, color: e.color.esperado, sabor: e.sabor.esperado,
+  };
+}
+
 export function Calidad() {
   const { id } = useParams();
   const navegar = useNavigate();
@@ -47,7 +58,7 @@ export function Calidad() {
       <Cabecera titulo="Control de calidad" sub="Cargá los resultados del lote y firmá el dictamen." />
       <Proceso actual={3} />
       <div className="calidad-grid">
-        <div>
+        <div className="calidad-lotes">
           <section className="tarjeta">
             <h2>En <Termino t="cuarentena">cuarentena</Termino></h2><p className="sub">{plural(pendientes.length, 'lote')} · {kg(kgTotal)}</p>
             <div style={{ height: 14 }} />
@@ -86,12 +97,17 @@ function FormularioLote({ lote, alGuardar }: { lote: LoteCalidad; alGuardar: () 
   const b = lote.borrador ?? {};
   const habilitado = puede('CALIDAD');
   const titulo = habilitado ? undefined : `Sólo ${nombreRol('CALIDAD')} puede hacer esto.`;
+  // Sin borrador, el formulario arranca con los valores óptimos de la especificación:
+  // el analista sólo corrige lo que le dio distinto el laboratorio.
+  const optimo = valoresOptimos(e);
+  // Si hay borrador se respeta lo cargado y se completa con el óptimo lo que falte.
+  const delBorrador = (x: unknown) => (x === undefined || x === null || x === '' ? '' : typeof x === 'number' ? String(x).replace('.', ',') : String(x));
   const [v, setV] = useState<Valores>({
-    humedad: String(b.humedad ?? ''), ph: String(b.ph ?? ''), ufc: String(b.ufc ?? ''),
-    aroma: b.aroma || e.aroma.esperado, color: b.color || e.color.esperado, sabor: b.sabor || e.sabor.esperado,
+    humedad: delBorrador(b.humedad) || optimo.humedad, ph: delBorrador(b.ph) || optimo.ph, ufc: delBorrador(b.ufc) || optimo.ufc,
+    aroma: b.aroma || optimo.aroma, color: b.color || optimo.color, sabor: b.sabor || optimo.sabor,
   });
   const [dictamen, setDictamen] = useState<Dictamen>((b.dictamen as Dictamen) || 'APROBAR_LIBERAR');
-  const [obs, setObs] = useState(String(b.observaciones ?? ''));
+  const [obs, setObs] = useState(String(b.observaciones ?? '').trim() || (b.dictamen === 'RECHAZAR_BLOQUEAR' ? '' : OBS_CONFORME));
   const [ocupado, setOcupado] = useState(false);
   const r = evaluar(e, v);
   const conformes = Object.values(r).filter((x) => x === true).length;
@@ -102,13 +118,7 @@ function FormularioLote({ lote, alGuardar }: { lote: LoteCalidad; alGuardar: () 
     humedad: Number.isNaN(leerNumero(v.humedad)) ? '' : leerNumero(v.humedad), ph: Number.isNaN(leerNumero(v.ph)) ? '' : leerNumero(v.ph),
     ufc: Number.isNaN(leerNumero(v.ufc)) ? '' : leerNumero(v.ufc), aroma: v.aroma, color: v.color, sabor: v.sabor, dictamen, observaciones: obs.trim(),
   });
-  const cargarEjemplo = () => {
-    // valores dentro de la especificación de ESTE producto (cada línea tiene la suya)
-    const humedad = (Math.round(e.humedad_max * 0.75 * 10) / 10).toString().replace('.', ',');
-    const ph = (Math.round(((e.ph_min + e.ph_max) / 2) * 10) / 10).toString().replace('.', ',');
-    setV({ humedad, ph, ufc: '320', aroma: e.aroma.esperado, color: e.color.esperado, sabor: e.sabor.esperado });
-    if (!obs.trim()) setObs('Resultados dentro de la especificación de ejemplo. Evaluación sensorial conforme. Sin desvíos observados.');
-  };
+  const cargarOptimos = () => { setV(optimo); setDictamen('APROBAR_LIBERAR'); if (!obs.trim()) setObs(OBS_CONFORME); };
   const guardarBorrador = async () => {
     try { await api.put(`/calidad/${lote.id}/borrador`, cuerpo()); aviso('Borrador guardado. El lote sigue en cuarentena.', 'ok'); alGuardar(); } catch (err) { error(err); }
   };
@@ -142,10 +152,10 @@ function FormularioLote({ lote, alGuardar }: { lote: LoteCalidad; alGuardar: () 
       </section>
 
       <section className="tarjeta">
-        <div className="tarjeta-cab"><div><h2>Determinaciones</h2><p className="sub">El sistema compara cada resultado con la especificación del producto (valores de ejemplo, no son límites normativos).</p></div>
+        <div className="tarjeta-cab"><div><h2>Determinaciones</h2><p className="sub">Vienen precargados los valores óptimos: cambiá sólo lo que dio distinto el laboratorio. El sistema compara cada resultado con la especificación (valores de ejemplo, no son límites normativos).</p></div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <Pill color={fuera ? 'rojo' : conformes === 6 ? 'verde' : 'gris'}>{conformes}/6 conformes</Pill>
-            <button className="btn chico" disabled={!habilitado} title="Completa resultados dentro de especificación para agilizar la demo" onClick={cargarEjemplo}>Cargar ejemplo</button>
+            <button className="btn chico" disabled={!habilitado} title="Vuelve a poner los valores ideales de la especificación" onClick={cargarOptimos}>Valores óptimos</button>
           </div></div>
         <table className="tabla">
           <thead><tr><th>Determinación</th><th style={{ width: 240 }}>Resultado</th><th>Debe ser</th><th></th></tr></thead>

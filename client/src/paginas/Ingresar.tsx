@@ -11,10 +11,10 @@ import { api } from '../lib/api';
 import { QUE_HACE } from '../lib/demo';
 import { PASOS } from '../lib/proceso';
 import type { Usuario } from '../lib/tipos';
-import { Icono, LogotipoSigta, type NombreIcono } from '../componentes/Icono';
+import { Icono, LogotipoSigta } from '../componentes/Icono';
+import { FotoRol } from '../componentes/Rol';
 import type { Rol } from '../lib/tipos';
 
-const ICONO_ROL: Record<Rol, NombreIcono> = { PRODUCCION: 'ejecucion', CALIDAD: 'calidad', DEPOSITO: 'deposito', DIRECCION: 'reportes' };
 const AREA: Record<Rol, string> = { PRODUCCION: 'Producción', CALIDAD: 'Calidad', DEPOSITO: 'Depósito', DIRECCION: 'Gerencia' };
 
 export function Ingresar() {
@@ -65,7 +65,7 @@ export function Ingresar() {
             <div className="acceso-lista">
               {demo.usuarios.map((u) => (
                 <button key={u.id} className="acceso" disabled={Boolean(entrando)} onClick={() => { setEntrando(u.email); entrar(() => ingresarComo(u.email)); }}>
-                  <span className={`acceso-foto ${u.rol.toLowerCase()}`}>{u.iniciales}<i><Icono n={ICONO_ROL[u.rol]} tam={13} /></i></span>
+                  <FotoRol rol={u.rol} />
                   <span className="acceso-texto"><b>{u.nombre}</b><span className="acceso-cargo">{u.cargo}</span><small>{QUE_HACE[u.rol]}</small></span>
                   <span className="acceso-ir">{entrando === u.email ? 'Entrando…' : <Icono n="chevDer" tam={18} />}</span>
                 </button>

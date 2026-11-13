@@ -30,7 +30,8 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page.locator('.marca')).toContainText('SIGTA');
   await expect(page.locator('.marca')).toContainText('Gestión y Trazabilidad Alimentaria');
   await page.getByRole('link', { name: /Nueva orden/ }).click();
-  await expect(page.getByText('Paso 1 de 4 · Planificar orden')).toBeVisible();
+  await expect(page.locator('.guia-detalle')).toContainText('Paso 1 de 4');
+  await expect(page.locator('.guia-detalle h3')).toHaveText('Planificar orden');
   await expect(page.getByLabel('Producto terminado *')).toHaveValue('28'); // Coditos 500 g
   await expect(page.getByTestId('ficha-producto')).toContainText('Línea Pastas Secas');
   await page.getByLabel('Cantidad *').fill('1000');
@@ -69,7 +70,7 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page.locator('header .usuario')).toContainText('Lucía Benítez');
   await expect(page.locator('.lote-item.sel')).toContainText(lote);
   // humedad fuera de especificación: no se puede aprobar
-  await page.getByRole('button', { name: 'Cargar ejemplo' }).click();
+  await page.getByRole('button', { name: 'Valores óptimos' }).click();
   await page.locator('#humedad').fill('19');
   await expect(page.getByText('No se puede aprobar')).toBeVisible();
   await page.locator('#humedad').fill('12,4');
@@ -118,7 +119,7 @@ test('bloqueo lógico: un lote en cuarentena no se puede despachar', async ({ pa
 test('rechazo: un lote fuera de especificación se bloquea y exige el motivo', async ({ page }) => {
   await ingresarComo(page, /Técnica de calidad/);
   await page.getByRole('link', { name: /Controlar calidad/ }).click();
-  await page.getByRole('button', { name: 'Cargar ejemplo' }).click();
+  await page.getByRole('button', { name: 'Valores óptimos' }).click();
   await page.locator('#ufc').fill('45000');
   await page.locator('#obs').fill('');
   await page.getByLabel('Rechazar y bloquear').check();
@@ -200,5 +201,5 @@ test('en el celular el menú se despliega y no hay desplazamiento horizontal', a
   expect(ancho).toBeLessThanOrEqual(390);
   await page.getByRole('button', { name: 'Abrir menú' }).click();
   await page.locator('.sidebar').getByRole('link', { name: /Elaborar/ }).click();
-  await expect(page.getByRole('heading', { name: 'Elaborar' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Elaborar', level: 1 })).toBeVisible();
 });

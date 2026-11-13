@@ -13,6 +13,8 @@ import type { Pendientes, Rol } from '../lib/tipos';
 import { Icono, IsotipoSigta, type NombreIcono } from './Icono';
 import { Pill } from './Comunes';
 import { BotonInstalar } from './InstalarApp';
+import { LateralContexto } from './Lateral';
+import { FotoRol } from './Rol';
 import { LogoEmpresa, useTema } from '../contexto/Tema';
 
 const activo = ({ isActive }: { isActive: boolean }) => (isActive ? 'activo' : '');
@@ -65,6 +67,7 @@ export function Layout() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [abierto, setAbierto] = useState<'' | 'usuario' | 'demo' | 'alertas'>('');
   const [vuelta, setVuelta] = useState(0); // al cambiar de usuario o reiniciar, la pantalla se vuelve a cargar
+  const [lateral, setLateral] = useState<HTMLElement | null>(null);
   const [alertas, setAlertas] = useState<{ id: number; detalle: string; usuario: string; fecha: string }[] | null>(null);
 
   // Cada vez que se cambia de pantalla: se actualizan los números del menú y se cierra el menú del celular
@@ -168,18 +171,18 @@ export function Layout() {
               aria-label={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}><Icono n={tema === 'oscuro' ? 'sol' : 'luna'} /></button>
             <button className="campana" aria-label="Alertas" onClick={abrirAlertas}><Icono n="campana" />{pendientes && pendientes.alertas > 0 && <span className="n">{pendientes.alertas}</span>}</button>
             <button className="usuario" onClick={() => setAbierto(abierto === 'usuario' ? '' : 'usuario')} aria-label={`Usuario: ${usuario.nombre}`}>
-              <span><b>{usuario.nombre}</b><small>{usuario.cargo}</small></span><span className="avatar">{usuario.iniciales}</span>
+              <span><b>{usuario.nombre}</b><small>{usuario.cargo}</small></span><span className={`avatar ${usuario.rol.toLowerCase()}`}>{usuario.iniciales}</span>
             </button>
           </div>
 
           <Desplegable abierto={abierto === 'usuario'} cerrar={() => setAbierto('')}>
             <h4>Sesión iniciada</h4>
-            <div className="vacio" style={{ paddingTop: 0 }}><b style={{ color: 'var(--texto)' }}>{usuario.nombre}</b> · {usuario.email}<br />{QUE_HACE[usuario.rol]}</div>
+            <div className="sesion-actual"><FotoRol rol={usuario.rol} tam={40} /><span><b>{usuario.nombre}</b><small>{usuario.email}</small><small>{QUE_HACE[usuario.rol]}</small></span></div>
             {config.demo && <>
               <hr /><h4>Cambiar de usuario (demo)</h4>
               {(Object.keys(USUARIO_DE_ROL) as Rol[]).filter((r) => r !== usuario.rol).map((r) => (
                 <button key={r} className="op" onClick={() => cambiarA(r)}>
-                  <Icono n="cambiar" /><span><b>{nombreRol(r)}</b><small>{QUE_HACE[r]}</small></span>
+                  <FotoRol rol={r} tam={36} /><span><b>{nombreRol(r)}</b><small>{QUE_HACE[r]}</small></span>
                 </button>
               ))}
             </>}
@@ -202,10 +205,17 @@ export function Layout() {
         </header>
 
         <main className="contenido">
-          {usuario.rol === 'DIRECCION' && (
-            <div className="aviso solo-lectura"><Icono n="info" /><div><b>Modo de sólo lectura</b>Estás como {usuario.cargo}: podés consultar todo, pero no registrar movimientos.</div></div>
-          )}
-          <div key={`${ubicacion.pathname}|${vuelta}|${usuario.id}`} className="pantalla-entra"><Outlet /></div>
+          <LateralContexto.Provider value={lateral}>
+            <div className="contenido-grid">
+              <div className="contenido-principal">
+                {usuario.rol === 'DIRECCION' && (
+                  <div className="aviso solo-lectura"><Icono n="info" /><div><b>Modo de sólo lectura</b>Estás como {usuario.cargo}: podés consultar todo, pero no registrar movimientos.</div></div>
+                )}
+                <div key={`${ubicacion.pathname}|${vuelta}|${usuario.id}`} className="pantalla-entra"><Outlet /></div>
+              </div>
+              <aside className="lateral" ref={setLateral} aria-label="Guía del paso" />
+            </div>
+          </LateralContexto.Provider>
         </main>
       </div>
     </div>
