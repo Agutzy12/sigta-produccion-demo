@@ -470,6 +470,12 @@ table.tabla { width: 100%; border-collapse: collapse; }
    Durante el cambio se cortan las transiciones propias de cada elemento para que no vayan desfasadas. */
 .cambiando-tema, .cambiando-tema * { transition: none !important; }
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .38s; animation-timing-function: ease; }
+/* El fundido del tema se ve aunque el sistema pida reducir animaciones (no hay movimiento, sólo cambia el color) */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation-duration: .38s !important; }
+}
+/* Respaldo para navegadores sin fundido de pantalla: todos los colores animan a la vez */
+.tema-animado, .tema-animado * { transition: background-color .35s ease, border-color .35s ease, color .35s ease, fill .35s ease, stroke .35s ease !important; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

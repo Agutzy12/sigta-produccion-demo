@@ -27,14 +27,16 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
       actual.current = nuevo;
       flushSync(() => setTema(nuevo));
     };
-    raiz.classList.add('cambiando-tema'); // sin transiciones propias durante el cambio
-    const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    // Es un fundido suave (no mueve nada), así que se hace aunque el sistema tenga "reducir animaciones"
     const doc = document as Document & { startViewTransition?: (f: () => void) => { finished: Promise<void> } };
-    if (doc.startViewTransition && !sinMovimiento) {
+    if (doc.startViewTransition) {
+      raiz.classList.add('cambiando-tema'); // sin transiciones propias: la foto nueva sale con los colores finales
       doc.startViewTransition(aplicar).finished.finally(() => raiz.classList.remove('cambiando-tema'));
     } else {
+      // Navegadores sin fundido de pantalla: todos los colores animan juntos, con la misma duración
+      raiz.classList.add('tema-animado');
       aplicar();
-      requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('cambiando-tema')));
+      setTimeout(() => raiz.classList.remove('tema-animado'), 450);
     }
   }, []);
   const valor = useMemo(() => ({ tema, cambiarTema }), [tema, cambiarTema]);
