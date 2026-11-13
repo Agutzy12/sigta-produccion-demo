@@ -36,13 +36,13 @@ export function Proceso({ actual, guia = true }: { actual: 1 | 2 | 3 | 4; guia?:
       </div>
       {guia && (
         <div className="guia-paso">
-          <div className="guia-linea">
-            <span><b>Paso {paso.n} de 4 · {paso.titulo}</b> · lo registra {nombreRol(paso.rol)}</span>
-            <details className="guia-mas">
-              <summary>¿Qué hago acá?</summary>
+          <div className="guia-caja">
+            <Icono n="info" tam={20} />
+            <div>
+              <div><b>Paso {paso.n} de 4 · {paso.titulo}</b> · lo registra <b>{nombreRol(paso.rol)}</b></div>
               <div>{paso.que}</div>
               <div className="sigue">Después: {paso.despues}</div>
-            </details>
+            </div>
           </div>
           {!esSuTurno && usuario && (
             <div className="otro-rol">

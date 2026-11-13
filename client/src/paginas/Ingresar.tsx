@@ -11,7 +11,7 @@ import { api } from '../lib/api';
 import { QUE_HACE } from '../lib/demo';
 import { PASOS } from '../lib/proceso';
 import type { Usuario } from '../lib/tipos';
-import { Icono, IsotipoSigta, type NombreIcono } from '../componentes/Icono';
+import { Icono, LogotipoSigta, type NombreIcono } from '../componentes/Icono';
 import type { Rol } from '../lib/tipos';
 
 const ICONO_ROL: Record<Rol, NombreIcono> = { PRODUCCION: 'ejecucion', CALIDAD: 'calidad', DEPOSITO: 'deposito', DIRECCION: 'reportes' };
@@ -46,11 +46,11 @@ export function Ingresar() {
   return (
     <div className="ingreso">
       <section className="presentacion">
-        <div className="marca-grande"><IsotipoSigta claro /><b>SIGTA</b></div>
-        <h1>Gestión y Trazabilidad Alimentaria</h1>
-        <p>Del pedido de producción al cliente, cada lote queda registrado: qué insumos usó, quién lo aprobó y dónde está.</p>
+        <div className="marca-grande"><LogotipoSigta alto={150} /></div>
+        <h1>Sistema Integral de Gestión y Trazabilidad Alimentaria</h1>
+        <p>Reemplaza los formularios en papel y las planillas de la planta: planifica la producción con las recetas, controla la calidad de cada lote antes de que salga y permite saber en segundos de qué insumos está hecho un producto y a qué cliente llegó.</p>
         <ol className="pasos-intro">
-          {PASOS.map((p) => <li key={p.n}><i>{p.n}</i><span><b>{p.titulo}</b>{AREA[p.rol]}</span></li>)}
+          {PASOS.map((p) => <li key={p.n}><i>{p.n}</i><span><b>{p.titulo} <em>· {AREA[p.rol]}</em></b>{p.que.split(':')[0].replace(/\.$/, '')}.</span></li>)}
         </ol>
         <div className="cliente"><LogoEmpresa alto={40} siempreClaro /><span>Para Agrifood Argentina S.A.<br />Módulo de Producción y Trazabilidad</span></div>
       </section>
@@ -65,8 +65,8 @@ export function Ingresar() {
             <div className="acceso-lista">
               {demo.usuarios.map((u) => (
                 <button key={u.id} className="acceso" disabled={Boolean(entrando)} onClick={() => { setEntrando(u.email); entrar(() => ingresarComo(u.email)); }}>
-                  <span className={`acceso-icono ${u.rol.toLowerCase()}`}><Icono n={ICONO_ROL[u.rol]} tam={20} /></span>
-                  <span className="acceso-texto"><b>{u.cargo}</b><small>{QUE_HACE[u.rol]}</small></span>
+                  <span className={`acceso-foto ${u.rol.toLowerCase()}`}>{u.iniciales}<i><Icono n={ICONO_ROL[u.rol]} tam={13} /></i></span>
+                  <span className="acceso-texto"><b>{u.nombre}</b><span className="acceso-cargo">{u.cargo}</span><small>{QUE_HACE[u.rol]}</small></span>
                   <span className="acceso-ir">{entrando === u.email ? 'Entrando…' : <Icono n="chevDer" tam={18} />}</span>
                 </button>
               ))}
@@ -74,7 +74,7 @@ export function Ingresar() {
           </div>
         )}
 
-        <details className="ingreso-manual" open={!demo}>
+        <details className="ingreso-manual" open>
           <summary>{demo ? 'Ingresar con email y contraseña' : 'Ingresar'}</summary>
           <form onSubmit={enviar} className="rejilla" style={{ gap: 14, marginTop: 14 }}>
             <div className="campo"><label htmlFor="email">Email</label>

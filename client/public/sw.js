@@ -4,7 +4,7 @@
  * - Datos (/api): siempre se piden al servidor (nunca se muestran datos viejos de producción).
  * - Sin conexión: abre igual y avisa que no hay conexión con el servidor.
  */
-const VERSION = 'sigta-v1';
+const VERSION = 'sigta-v2';
 const BASICOS = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/icono-192.png', '/img/logo.png', '/img/logo-oscuro.png'];
 
 self.addEventListener('install', (evento) => {

@@ -56,14 +56,12 @@ export function Icono({ n, tam }: { n: NombreIcono; tam?: number }) {
 }
 
 /** Isotipo de SIGTA: un recorrido que une origen, planta y destino (la trazabilidad). */
-export function IsotipoSigta({ claro = false }: { claro?: boolean }) {
-  return (
-    <svg viewBox="0 0 64 64" aria-hidden="true">
-      <rect width="64" height="64" rx="14" fill={claro ? '#fff' : '#009448'} />
-      <path d="M14 44c6-2 9-7 11-13s6-11 13-12M38 19c6 0 10 3 12 7" fill="none" stroke={claro ? '#009448' : '#fff'} strokeWidth="5" strokeLinecap="round" />
-      <circle cx="14" cy="44" r="5" fill="#ffa300" />
-      <circle cx="38" cy="19" r="5" fill={claro ? '#009448' : '#fff'} />
-      <circle cx="50" cy="26" r="5" fill="#7fc821" />
-    </svg>
-  );
+/** Isotipo de SIGTA: la hoja roja tapando "SIG / TA" sobre fondo negro. */
+export function IsotipoSigta(_: { claro?: boolean } = {}) {
+  return <img className="isotipo-sigta" src="/img/sigta-icono.svg" alt="" aria-hidden="true" />;
+}
+
+/** Logotipo completo (rojo, sin fondo) para usar en grande. */
+export function LogotipoSigta({ alto = 120 }: { alto?: number }) {
+  return <img className="logotipo-sigta" src="/img/logo-sigta.svg" alt="SIGTA" style={{ height: alto }} />;
 }

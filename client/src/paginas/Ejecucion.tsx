@@ -340,7 +340,8 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
         </div>
       </section>
 
-      <div className="barra-acciones"><span className="nota"><Icono n="escudo" tam={16} /> Al finalizar, el lote queda en <Termino t="cuarentena">cuarentena</Termino> hasta que Calidad lo libere.</span>
+      <div className="confirmacion"><Icono n="escudo" tam={22} /><div><b>Al finalizar, el lote queda en <Termino t="cuarentena">cuarentena</Termino></b>Se descuenta el stock de los insumos y el lote no se puede vender ni despachar hasta que Calidad lo libere.</div></div>
+      <div className="barra-acciones"><span className="nota">Podés guardar el avance y seguir después.</span>
         <div className="botones">
           {!o.pausada && <button className="btn" disabled={!habilitado} title={titulo} onClick={pausarOReanudar}><Icono n="pausa" /> Pausar línea</button>}
           <button className="btn" disabled={!habilitado} title={titulo} onClick={guardarAvance}><Icono n="guardar" /> Guardar avance</button>

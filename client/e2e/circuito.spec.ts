@@ -14,7 +14,6 @@ test('la pantalla de ingreso explica qué es SIGTA y rechaza una contraseña inc
   await expect(page.getByRole('heading', { name: 'Gestión y Trazabilidad Alimentaria' })).toBeVisible();
   await expect(page.getByAltText('Agrifood Argentina')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Probar la demo' })).toBeVisible();
-  await page.getByText('Ingresar con email y contraseña').click();
   await page.getByLabel('Email').fill('calidad@sigta.demo');
   await page.getByLabel('Contraseña').fill('equivocada');
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();

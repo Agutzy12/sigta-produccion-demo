@@ -163,26 +163,17 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
             <div><b>{verificacion.planificable ? 'Sin faltantes' : 'Hay faltantes críticos'}</b>
               {verificacion.planificable ? 'Hay stock de todos los insumos críticos: podés planificar la orden.' : 'No se puede planificar. Guardá un borrador: se avisa a Compras automáticamente.'}</div>
           </div>
-          {verificacion.items.some((i) => !i.ok) && (
-            <table className="tabla" style={{ marginTop: 16 }}>
-              <thead><tr><th>Insumo con faltante</th><th>Requerido</th><th>Disponible</th><th>Falta</th></tr></thead>
-              <tbody>{verificacion.items.filter((i) => !i.ok).map((i) => (
-                <tr key={i.insumo_id}><td><b>{i.nombre}</b><span className="peq">{i.critico ? 'Crítico: bloquea la planificación' : 'No crítico'}</span></td>
-                  <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(Math.max(0, i.disponible))} {i.unidad}</td>
-                  <td className="num"><Pill color="rojo">{num(i.faltante)} {i.unidad}</Pill></td></tr>))}</tbody>
-            </table>
-          )}
-          <details className="plegable"><summary>Ver los {verificacion.items.length} insumos de la receta ({num(verificacion.kgMateriaPrima)} kg de materias primas)</summary>
-            <table className="tabla">
-              <thead><tr><th>Materia prima / empaque</th><th>Requerido</th><th>Disponible</th><th></th></tr></thead>
-              <tbody>{verificacion.items.map((i) => (
-                <tr key={i.insumo_id}>
-                  <td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : 'Empaque'}</span></td>
-                  <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(Math.max(0, i.disponible))} {i.unidad}</td>
-                  <td>{i.ok ? <Pill color="verde">Suficiente</Pill> : <Pill color="rojo">Faltante</Pill>}</td>
-                </tr>))}</tbody>
-            </table>
-          </details>
+          <table className="tabla" style={{ marginTop: 16 }}>
+            <thead><tr><th>Materia prima / empaque</th><th>Requerido</th><th>Disponible</th><th>Faltante</th><th>Estado</th></tr></thead>
+            <tbody>{[...verificacion.items].sort((a, b) => Number(a.ok) - Number(b.ok)).map((i) => (
+              <tr key={i.insumo_id}>
+                <td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : i.critico ? 'Empaque crítico' : 'Empaque'}</span></td>
+                <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(Math.max(0, i.disponible))} {i.unidad}</td>
+                <td className="num">{i.ok ? '—' : `${num(i.faltante)} ${i.unidad}`}</td>
+                <td>{i.ok ? <Pill color="verde">Suficiente</Pill> : <Pill color="rojo">{i.critico ? 'Faltante crítico' : 'Faltante'}</Pill>}</td>
+              </tr>))}</tbody>
+          </table>
+          <div style={{ marginTop: 12, fontSize: 14, color: 'var(--texto-suave)' }}>Materias primas: <b>{num(verificacion.kgMateriaPrima)} kg</b> · no cuenta el stock en cuarentena ni lo reservado por otras órdenes.</div>
         </>)}
       </section>
 
