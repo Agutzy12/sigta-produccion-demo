@@ -23,7 +23,7 @@ export function ComoFunciona() {
         </p>
       </section>
 
-      <h2 style={{ fontSize: 20, margin: '6px 0 12px' }}>El circuito en 4 pasos</h2>
+      <h2 className="titulo-seccion">El circuito en 4 pasos</h2>
       <div className="flujo" style={{ marginBottom: 22 }}>
         {PASOS.map((p) => (
           <div key={p.n} className="etapa-flujo">

@@ -200,7 +200,7 @@ function FichaLote({ f, buscar, despacho }: { f: Ficha; buscar: (q: string) => v
         </div>
       </section>
 
-      <h2 style={{ fontSize: 20, margin: '6px 0 12px' }}>Recorrido del lote</h2>
+      <h2 className="titulo-seccion">Recorrido del lote</h2>
       <div className="recorrido">
         <Etapa icono="trigo" titulo="Origen"><h3>{plural(f.resumen_origen.insumos, 'insumo')}</h3><p>{plural(f.resumen_origen.partidas, 'partida')} de proveedores.</p></Etapa>
         <Etapa icono="ejecucion" titulo="Producción" sel><h3>{op.numero}</h3><p>{kg(f.kg_consumidos)} → {kg(lote.cantidad_kg)}. Merma {num(op.merma_pct, 1)} %.</p></Etapa>

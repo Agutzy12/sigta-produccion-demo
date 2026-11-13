@@ -8,9 +8,12 @@ const correr = (comando, env = {}) => execSync(comando, { stdio: 'inherit', env:
 correr('npm run build');
 if (!process.env.DATABASE_URL) {
   console.warn('\n⚠ Falta DATABASE_URL: se publicaron las pantallas, pero la API no va a funcionar hasta conectar la base (ver docs/DESPLIEGUE.md).\n');
+} else if (process.env.VERCEL_ENV && process.env.VERCEL_ENV !== 'production') {
+  // Las vistas previas (otras ramas) comparten la base con producción: no la tocan.
+  // Así dos compilaciones al mismo tiempo nunca compiten por aplicar las mismas migraciones.
+  console.log(`\nVista previa (${process.env.VERCEL_ENV}): no se aplican migraciones ni datos; se usa la base tal como está.\n`);
 } else {
-  // Migraciones y datos van siempre a la misma base: si no hay conexión directa aparte, se usa la misma
-  process.env.DATABASE_URL_UNPOOLED ||= process.env.DATABASE_URL;
+  // Migraciones y datos van siempre a la misma base (migrar.mjs usa la conexión directa de esa base)
   correr('npm run db:migrate -w server');
   correr('node server/dist/seed/cli.js --si-vacia', { TZ: 'America/Argentina/Cordoba' });
 }

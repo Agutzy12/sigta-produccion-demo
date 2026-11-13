@@ -730,11 +730,12 @@ table.tabla { width: 100%; border-collapse: collapse; }
   .banner .cabecera p { margin-top: 2px; font-size: 15px; }
 
   /* Títulos de cada sección: con una marca de color para que se distingan a simple vista */
-  .tarjeta > h2::before, .tarjeta-cab h2::before { content: ''; display: inline-block; width: 4px; height: .9em; border-radius: 3px; background: var(--ambar); margin-right: 10px; vertical-align: -.08em; }
+  .tarjeta > h2::before, .tarjeta-cab h2::before, .titulo-seccion::before { content: ''; display: inline-block; width: 4px; height: .9em; border-radius: 3px; background: var(--ambar); margin-right: 10px; vertical-align: -.08em; }
   @media (max-width: 700px) {
     .banner { padding: 16px; gap: 12px; align-items: flex-start; }
     .banner-icono { width: 44px; height: 44px; border-radius: 12px; }
     .banner .cabecera { flex-direction: column; align-items: flex-start; gap: 10px; }
     .banner .cabecera h1 { font-size: 24px; }
   }
+  .titulo-seccion { font-size: 20px; font-weight: 600; margin: 6px 0 12px; }
 }
