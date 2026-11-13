@@ -466,8 +466,10 @@ table.tabla { width: 100%; border-collapse: collapse; }
 .tabla tbody tr { transition: background-color .12s; }
 
 /* Cambio de tema: los colores se funden */
-/* El cambio de tema es instantáneo: se cortan las transiciones para que ningún texto quede un instante sin contraste */
+/* Cambio de tema: toda la pantalla se funde de una vez (fondos y letras juntos).
+   Durante el cambio se cortan las transiciones propias de cada elemento para que no vayan desfasadas. */
 .cambiando-tema, .cambiando-tema * { transition: none !important; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .38s; animation-timing-function: ease; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

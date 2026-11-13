@@ -1,5 +1,6 @@
 /** Modo claro (por defecto) u oscuro. Se recuerda en el navegador. */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 
 type Tema = 'claro' | 'oscuro';
 const leer = (): Tema => { try { return localStorage.getItem('sigta_tema') === 'oscuro' ? 'oscuro' : 'claro'; } catch { return 'claro'; } };
@@ -9,18 +10,32 @@ export const useTema = () => useContext(Contexto);
 
 export function ProveedorTema({ children }: { children: ReactNode }) {
   const [tema, setTema] = useState<Tema>(leer);
-  useEffect(() => { document.documentElement.dataset.tema = tema; }, [tema]);
+  const actual = useRef(tema);
+  useEffect(() => { document.documentElement.dataset.tema = tema; actual.current = tema; }, [tema]);
+
+  /**
+   * Cambio de tema animado y parejo: se saca una "foto" de la pantalla, se aplica el tema nuevo de una sola vez
+   * y el navegador funde una foto con la otra. Así fondos, bordes y letras cambian juntos en la misma animación
+   * (antes cada texto animaba su color por su cuenta y quedaba un instante sin contraste).
+   */
   const cambiarTema = useCallback(() => {
-    setTema((actual) => {
-      const nuevo: Tema = actual === 'oscuro' ? 'claro' : 'oscuro';
-      try { localStorage.setItem('sigta_tema', nuevo); } catch { /* sin almacenamiento */ }
-      // Se aplica en el mismo clic (sin esperar a React) y sin transiciones: todo cambia de color a la vez
-      const raiz = document.documentElement;
-      raiz.classList.add('cambiando-tema');
+    const nuevo: Tema = actual.current === 'oscuro' ? 'claro' : 'oscuro';
+    try { localStorage.setItem('sigta_tema', nuevo); } catch { /* sin almacenamiento */ }
+    const raiz = document.documentElement;
+    const aplicar = () => {
       raiz.dataset.tema = nuevo;
+      actual.current = nuevo;
+      flushSync(() => setTema(nuevo));
+    };
+    raiz.classList.add('cambiando-tema'); // sin transiciones propias durante el cambio
+    const sinMovimiento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const doc = document as Document & { startViewTransition?: (f: () => void) => { finished: Promise<void> } };
+    if (doc.startViewTransition && !sinMovimiento) {
+      doc.startViewTransition(aplicar).finished.finally(() => raiz.classList.remove('cambiando-tema'));
+    } else {
+      aplicar();
       requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('cambiando-tema')));
-      return nuevo;
-    });
+    }
   }, []);
   const valor = useMemo(() => ({ tema, cambiarTema }), [tema, cambiarTema]);
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
