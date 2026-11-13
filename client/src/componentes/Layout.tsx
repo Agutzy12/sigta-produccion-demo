@@ -48,9 +48,11 @@ function seccionDe(ruta: string): { icono: NombreIcono; clase: string } {
 }
 
 export function Marca() {
+  const { salir } = useSesion();
+  // El logo vuelve a la pantalla de inicio de sesión (cierra la sesión actual para poder elegir otro perfil)
   return (
     <div className="marca">
-      <Link to="/panel" className="sigta-titulo" title="Ir al panel"><IsotipoSigta /><b>SIGTA</b></Link>
+      <Link to="/ingresar" className="sigta-titulo" title="Volver al inicio de sesión" onClick={() => salir()}><IsotipoSigta /><b>SIGTA</b></Link>
       <div className="bajada">Gestión y Trazabilidad Alimentaria</div>
       <div className="para"><span>para</span><LogoEmpresa /></div>
     </div>
