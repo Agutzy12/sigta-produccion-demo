@@ -1,5 +1,6 @@
 /** Piezas chicas que se repiten en todas las pantallas. */
 import type { ReactNode } from 'react';
+import { EnCabecera } from './Lateral';
 import { ESTADOS_LOTE, ESTADOS_OP, type Color } from '../lib/estados';
 import { GLOSARIO, type ClaveGlosario } from '../lib/glosario';
 import type { EstadoLote, EstadoOP } from '../lib/tipos';
@@ -22,14 +23,16 @@ export function Termino({ t, children }: { t: ClaveGlosario; children?: ReactNod
 
 export function Cabecera({ titulo, sub, children }: { titulo: string; sub?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="cabecera">
-      <div><h1>{titulo}</h1>{sub && <p>{sub}</p>}</div>
-      {children && <div className="acciones">{children}</div>}
-    </div>
+    <EnCabecera>
+      <div className="cabecera">
+        <div><h1>{titulo}</h1>{sub && <p>{sub}</p>}</div>
+        {children && <div className="acciones">{children}</div>}
+      </div>
+    </EnCabecera>
   );
 }
 
-export const Miga = ({ texto }: { texto: string }) => <div className="miga">{texto}</div>;
+export const Miga = ({ texto }: { texto: string }) => <EnCabecera><div className="miga">{texto}</div></EnCabecera>;
 
 export const Dato = ({ titulo, children }: { titulo: ReactNode; children: ReactNode }) =>
   <div className="dato"><small>{titulo}</small><b>{children}</b></div>;

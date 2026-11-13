@@ -43,7 +43,7 @@ const ICONOS = {
   reloj: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   salir: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 17l5-5-5-5M15 12H4"/>',
   cambiar: '<path d="M7 4L3 8l4 4M3 8h13a4 4 0 0 1 0 8h-2M17 20l4-4-4-4"/>',
-  rolProduccion: '<circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  rolProduccion: '<path d="M2.5 11h19M4.5 11v4.5A4.5 4.5 0 0 0 9 20h6a4.5 4.5 0 0 0 4.5-4.5V11"/><path d="M9 3.5c-.8.9-.8 2.1 0 3s.8 2.1 0 3M15 3.5c-.8.9-.8 2.1 0 3s.8 2.1 0 3M12 3c-.8.9-.8 2.1 0 3s.8 2.1 0 3"/>',
   rolCalidad: '<path d="M9 3h6M10 3v5.5L4.8 18a2 2 0 0 0 1.8 3h10.8a2 2 0 0 0 1.8-3L14 8.5V3"/><path d="M7 15h10"/>',
   rolDeposito: '<path d="M3 9.5L12 4l9 5.5V20H3z"/><path d="M7 20v-7h10v7M7 16.5h10"/>',
   rolGerencia: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',

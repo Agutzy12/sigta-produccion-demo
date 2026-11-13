@@ -2,7 +2,7 @@
  * Estructura de todas las pantallas: menú lateral (con los pasos numerados) + barra superior.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
 import { api } from '../lib/api';
@@ -35,10 +35,22 @@ const PROXIMOS: { texto: string; icono: NombreIcono; resumen: string; puntos: st
     puntos: ['Alta, baja y cambio de contraseña', 'Asignación de perfiles', 'Consulta del registro de auditoría'] },
 ];
 
+/** Ícono y color del encabezado según la sección en la que se está. */
+function seccionDe(ruta: string): { icono: NombreIcono; clase: string } {
+  if (ruta.startsWith('/ordenes')) return { icono: 'ordenes', clase: 'produccion' };
+  if (ruta.startsWith('/ejecucion')) return { icono: 'rolProduccion', clase: 'produccion' };
+  if (ruta.startsWith('/calidad')) return { icono: 'rolCalidad', clase: 'calidad' };
+  if (ruta.startsWith('/deposito')) return { icono: 'rolDeposito', clase: 'deposito' };
+  if (ruta.startsWith('/trazabilidad')) return { icono: 'trazabilidad', clase: 'consulta' };
+  if (ruta.startsWith('/catalogo')) return { icono: 'caja', clase: 'consulta' };
+  if (ruta.startsWith('/como-funciona')) return { icono: 'ayuda', clase: 'consulta' };
+  return { icono: 'panel', clase: 'inicio' };
+}
+
 export function Marca() {
   return (
     <div className="marca">
-      <div className="sigta-titulo"><IsotipoSigta /><b>SIGTA</b></div>
+      <Link to="/panel" className="sigta-titulo" title="Ir al panel"><IsotipoSigta /><b>SIGTA</b></Link>
       <div className="bajada">Gestión y Trazabilidad Alimentaria</div>
       <div className="para"><span>para</span><LogoEmpresa /></div>
     </div>
@@ -68,12 +80,14 @@ export function Layout() {
   const [abierto, setAbierto] = useState<'' | 'usuario' | 'demo' | 'alertas'>('');
   const [vuelta, setVuelta] = useState(0); // al cambiar de usuario o reiniciar, la pantalla se vuelve a cargar
   const [lateral, setLateral] = useState<HTMLElement | null>(null);
+  const [cabecera, setCabecera] = useState<HTMLElement | null>(null);
   const [alertas, setAlertas] = useState<{ id: number; detalle: string; usuario: string; fecha: string }[] | null>(null);
 
   // Cada vez que se cambia de pantalla: se actualizan los números del menú y se cierra el menú del celular
   useEffect(() => { recargarPendientes(); setMenuAbierto(false); setAbierto(''); window.scrollTo(0, 0); }, [ubicacion.pathname, ubicacion.search, recargarPendientes]);
 
   if (!usuario || !config) return null;
+  const seccion = seccionDe(ubicacion.pathname);
 
   const verProximo = (m: (typeof PROXIMOS)[number]) => modal({
     titulo: m.texto, ancho: 520,
@@ -205,7 +219,11 @@ export function Layout() {
         </header>
 
         <main className="contenido">
-          <LateralContexto.Provider value={lateral}>
+          <LateralContexto.Provider value={{ lateral, cabecera }}>
+            <div className={`banner ${seccion.clase}`}>
+              <span className="banner-icono"><Icono n={seccion.icono} tam={26} /></span>
+              <div className="contenido-cabecera" ref={setCabecera} />
+            </div>
             <div className="contenido-grid">
               <div className="contenido-principal">
                 {usuario.rol === 'DIRECCION' && (

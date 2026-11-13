@@ -56,7 +56,7 @@ export function Calidad() {
     <>
       <Miga texto="Circuito de producción / Paso 3 · Controlar calidad" />
       <Cabecera titulo="Control de calidad" sub="Cargá los resultados del lote y firmá el dictamen." />
-      <Proceso actual={3} />
+      <Proceso actual={3} hechos={lote ? 2 : 0} item={lote ? `${lote.codigo} · ${lote.producto_nombre}` : undefined} />
       <div className="calidad-grid">
         <div className="calidad-lotes">
           <section className="tarjeta">

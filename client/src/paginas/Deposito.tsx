@@ -42,7 +42,7 @@ export function Deposito() {
       <Cabecera titulo="Ingreso a depósito" sub="Controlá lo recibido, armá los pallets y asigná su ubicación.">
         {recepcion && <Pill color={recepcion.habilitado ? 'ambar' : 'rojo'}>{recepcion.habilitado ? 'Recepción pendiente' : 'Recepción no habilitada'}</Pill>}
       </Cabecera>
-      <Proceso actual={4} />
+      <Proceso actual={4} hechos={recepcion ? 3 : 0} item={recepcion ? recepcion.op.numero : undefined} />
       {recepcion ? <FormularioRecepcion key={recepcion.op.id} rec={recepcion} pendientes={pendientes} />
         : <section className="tarjeta"><Vacio titulo="No hay lotes liberados esperando recepción">Cuando Calidad apruebe un lote, aparece acá para su ingreso.<br /><br /><Link className="btn" to="/calidad">Ir a Control de calidad</Link></Vacio></section>}
       <StockPT />

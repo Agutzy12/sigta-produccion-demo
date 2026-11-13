@@ -9,8 +9,24 @@ import { USUARIO_DE_ROL } from '../lib/demo';
 import { Icono } from './Icono';
 import { EnLateral } from './Lateral';
 import { FotoRol } from './Rol';
+import type { EstadoOP } from '../lib/tipos';
 
-export function Proceso({ actual, guia = true }: { actual: 1 | 2 | 3 | 4; guia?: boolean }) {
+/** Cuántos pasos del circuito ya cumplió una orden, según su estado real en la base. */
+export function pasosHechos(estado: EstadoOP | null | undefined): number {
+  switch (estado) {
+    case 'PLANIFICADA': case 'EN_PRODUCCION': return 1;
+    case 'EN_CONTROL_CALIDAD': case 'RECHAZADA_SCRAP': return 2;
+    case 'FINALIZADA': return 4;
+    default: return 0;
+  }
+}
+
+/**
+ * actual: el paso de esta pantalla ("estás acá").
+ * hechos: los pasos que ya cumplió la orden o el lote que se está mirando (0 si no hay ninguno elegido).
+ * item: qué se está mirando, para que quede claro de quién es el avance.
+ */
+export function Proceso({ actual, hechos = 0, item, guia = true }: { actual: 1 | 2 | 3 | 4; hechos?: number; item?: string; guia?: boolean }) {
   const { usuario, nombreRol, config, ingresarComo } = useSesion();
   const { aviso, error } = useDialogos();
   const paso = PASOS[actual - 1];
@@ -26,14 +42,15 @@ export function Proceso({ actual, guia = true }: { actual: 1 | 2 | 3 | 4; guia?:
   return (
     <EnLateral>
       <section className="guia" aria-label="Pasos del circuito de producción">
-        <div className="guia-titulo">Circuito de producción</div>
+        <div className="guia-titulo">Circuito de producción{item && <span className="guia-item">{item}</span>}</div>
         <ol className="pasos-v">
           {PASOS.map((p) => {
-            const clase = p.n < actual ? 'hecho' : p.n === actual ? 'activo' : '';
+            const hecho = p.n <= hechos;
+            const clase = [hecho ? 'hecho' : '', p.n === actual ? 'activo' : ''].join(' ').trim();
             return (
               <li key={p.n} className={clase} aria-current={p.n === actual ? 'step' : undefined}>
-                <span className="num">{p.n < actual ? <Icono n="check" tam={14} /> : p.n}</span>
-                <span className="txt"><b>{p.corto}</b><small>{nombreRol(p.rol)}</small></span>
+                <span className="num">{hecho ? <Icono n="check" tam={14} /> : p.n}</span>
+                <span className="txt"><b>{p.corto}</b><small>{p.n === actual ? 'Estás acá · ' : ''}{hecho ? 'Hecho' : nombreRol(p.rol)}</small></span>
               </li>
             );
           })}

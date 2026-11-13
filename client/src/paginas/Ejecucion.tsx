@@ -9,7 +9,7 @@ import { fecha, fechaCorta, fechaHora, hoyTexto, kg, leerNumero, num, pesoTexto 
 import type { Color } from '../lib/estados';
 import type { FilaConsumo, Orden, OrdenResumen } from '../lib/tipos';
 import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, PillOP, Termino, Vacio } from '../componentes/Comunes';
-import { Proceso } from '../componentes/Proceso';
+import { Proceso, pasosHechos } from '../componentes/Proceso';
 import { Icono } from '../componentes/Icono';
 
 export function Ejecucion() {
@@ -92,7 +92,7 @@ function CabeceraOrden({ orden: o }: { orden: Orden }) {
       <Cabecera titulo="Elaborar" sub={`${o.producto_nombre} ${o.presentacion} · ${o.linea_nombre ?? ''} · ${o.hora_prevista < '14:00' ? 'Turno mañana' : 'Turno tarde'}`}>
         <button className="btn" onClick={verReceta}><Icono n="libro" /> Ver receta</button>
       </Cabecera>
-      <Proceso actual={2} guia={o.estado === 'PLANIFICADA' || enProd} />
+      <Proceso actual={2} hechos={pasosHechos(o.estado)} item={`${o.numero} · ${o.producto_nombre}`} guia={o.estado === 'PLANIFICADA' || enProd} />
       <section className="tarjeta">
         <div className="tarjeta-cab">
           <div><h2>{o.numero}</h2><p className="sub">Receta {o.receta_codigo} v{o.receta_version} · Objetivo {kg(o.cantidad_kg)}</p></div>
