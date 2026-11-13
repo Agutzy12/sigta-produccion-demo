@@ -15,7 +15,7 @@ import { datosInvalidos, noExiste, noSePuede } from '../errores.js';
 import {
   redondear, rellenar, aNumero, aFechaDb, sumarMeses, semanaISO, auditar, type UsuarioActual,
 } from './comun.js';
-import { stockInsumos, partidasDisponibles, recetaVigente } from './inventario.js';
+import { stockInsumos, partidasDisponiblesDe, recetaVigente, type Partida } from './inventario.js';
 
 /* ------------------------------------------------------------------ */
 /* Ayudas                                                               */
@@ -63,7 +63,8 @@ export async function requerimientos(productoId: number, kg: number) {
       // los kilos se redondean; las bolsas y etiquetas se redondean hacia arriba (no hay media bolsa)
       requerido = ri.insumo.unidad === 'kg' ? redondear(requerido) : Math.ceil(redondear(requerido, 6));
       const disponible = stock.get(ri.insumo_id)?.disponible ?? 0;
-      const faltante = Math.max(0, redondear(requerido - disponible));
+      // si otras órdenes ya reservaron más de lo que hay, para ESTA orden falta todo lo requerido (no más)
+      const faltante = Math.max(0, redondear(requerido - Math.max(0, disponible)));
       return {
         insumo_id: ri.insumo_id, cantidad_base: ri.cantidad_base, codigo: ri.insumo.codigo, nombre: ri.insumo.nombre,
         tipo: ri.insumo.tipo, unidad: ri.insumo.unidad, critico: ri.insumo.critico,
@@ -211,12 +212,13 @@ export interface FilaConsumo { insumo_id: number; partida_id: number | null; can
  * Reparte lo que necesita cada insumo entre las partidas disponibles,
  * empezando por la que vence antes (FEFO). Es la sugerencia inicial de la pantalla de ejecución.
  */
-export async function sugerirConsumo(items: { insumo_id: number; cantidad_teorica: number }[]) {
+export async function sugerirConsumo(items: { insumo_id: number; cantidad_teorica: number }[], partidas?: Map<number, Partida[]>) {
+  const disponibles = partidas ?? await partidasDisponiblesDe(items.map((i) => i.insumo_id));
   const sugeridas: FilaConsumo[] = [];
   for (const item of items) {
     let resto = item.cantidad_teorica;
     let ultima: { id: number } | null = null;
-    for (const partida of await partidasDisponibles(item.insumo_id)) {
+    for (const partida of disponibles.get(item.insumo_id) ?? []) {
       if (resto <= 0) break;
       const tomar = redondear(Math.min(resto, partida.cantidad));
       sugeridas.push({ insumo_id: item.insumo_id, partida_id: partida.id, cantidad: tomar });
@@ -241,14 +243,15 @@ export async function getOrden(id: number) {
     .map((oi) => ({
       insumo_id: oi.insumo_id, cantidad_teorica: oi.cantidad_teorica, codigo: oi.insumo.codigo, nombre: oi.insumo.nombre,
       tipo: oi.insumo.tipo, unidad: oi.insumo.unidad, critico: oi.insumo.critico,
-      partidas: undefined as Awaited<ReturnType<typeof partidasDisponibles>> | undefined,
+      partidas: undefined as Partida[] | undefined,
     }))
     .sort(porTipoYCantidad((i) => i.cantidad_teorica));
 
   let consumo_sugerido: FilaConsumo[] | undefined;
   if (op.estado === 'EN_PRODUCCION') {
-    for (const item of items) item.partidas = await partidasDisponibles(item.insumo_id);
-    consumo_sugerido = await sugerirConsumo(items);
+    const partidas = await partidasDisponiblesDe(items.map((i) => i.insumo_id));
+    for (const item of items) item.partidas = partidas.get(item.insumo_id) ?? [];
+    consumo_sugerido = await sugerirConsumo(items, partidas);
   }
   return {
     ...resto,
@@ -365,6 +368,8 @@ export function finalizarElaboracion(
     if (!Array.isArray(cuerpo.consumos)) throw datosInvalidos('Faltan los consumos de insumos');
 
     const items = await db().opItem.findMany({ where: { op_id: op.id }, include: { insumo: true } });
+    const idsPedidos = cuerpo.consumos.map((f) => Number(f.partida_id) || 0);
+    const partidasPedidas = new Map((await db().partidaInsumo.findMany({ where: { id: { in: idsPedidos } } })).map((p) => [p.id, p]));
 
     // 1) Validar cada fila de consumo
     const porInsumo = new Map<number, number>(); // total consumido de cada insumo
@@ -373,7 +378,7 @@ export function finalizarElaboracion(
     for (const fila of cuerpo.consumos) {
       const cantidad = aNumero(fila.cantidad);
       if (!(cantidad > 0)) continue; // las filas en cero se ignoran
-      const partida = await db().partidaInsumo.findUnique({ where: { id: Number(fila.partida_id) || 0 } });
+      const partida = partidasPedidas.get(Number(fila.partida_id) || 0);
       if (!partida) throw datosInvalidos('Hay un consumo sin lote de origen');
       if (partida.insumo_id !== Number(fila.insumo_id)) throw datosInvalidos(`La partida ${partida.nro_lote} no corresponde a ese insumo`);
       if (!items.some((i) => i.insumo_id === partida.insumo_id)) throw datosInvalidos(`La partida ${partida.nro_lote} no pertenece a la receta de la orden`);
@@ -385,7 +390,7 @@ export function finalizarElaboracion(
 
     // 2) Saldo suficiente en cada partida (si no alcanza, hay que dividir el consumo)
     for (const [partidaId, total] of porPartida) {
-      const partida = await db().partidaInsumo.findUniqueOrThrow({ where: { id: partidaId } });
+      const partida = partidasPedidas.get(partidaId)!;
       if (total > partida.cantidad + 1e-9) {
         throw noSePuede(`La partida ${partida.nro_lote} tiene saldo ${redondear(partida.cantidad)} y se intenta consumir ${redondear(total)}. Dividí el consumo en otra partida.`);
       }

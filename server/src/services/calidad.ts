@@ -64,7 +64,10 @@ function aplanar(lote: LoteLeido) {
 
 /** Todo lo que necesita la pantalla de calidad para un lote. */
 export async function getLoteCalidad(id: number) {
-  const lote = await leerLote(id);
+  return armarLoteCalidad(await leerLote(id));
+}
+
+function armarLoteCalidad(lote: LoteLeido) {
   const anio = lote.creado_en.getFullYear();
   return {
     ...aplanar(lote),
@@ -79,9 +82,9 @@ export async function getLoteCalidad(id: number) {
 /** Lotes esperando análisis (columna izquierda de la pantalla). */
 export async function lotesCuarentena() {
   const lista = await db().loteProduccion.findMany({
-    where: { estado: 'CUARENTENA' }, orderBy: [{ creado_en: 'desc' }, { id: 'desc' }], select: { id: true },
+    where: { estado: 'CUARENTENA' }, orderBy: [{ creado_en: 'desc' }, { id: 'desc' }], include: { orden: true, producto: true },
   });
-  return Promise.all(lista.map((l) => getLoteCalidad(l.id)));
+  return lista.map(armarLoteCalidad);
 }
 
 function leerEnsayo(cuerpo: Record<string, unknown>): Ensayo {

@@ -139,7 +139,7 @@ function VistaPlanificada({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o
       <section className="tarjeta"><h2>Insumos previstos</h2><p className="sub">Según la receta. Las <Termino t="partida">partidas</Termino> se eligen al iniciar.</p>
         <table className="tabla" style={{ marginTop: 16 }}><thead><tr><th>Insumo</th><th>Teórico</th></tr></thead>
           <tbody>{o.items.map((i) => (
-            <tr key={i.insumo_id}><td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : 'Empaque crítico'}</span></td><td className="num">{num(i.cantidad_teorica)} {i.unidad}</td></tr>
+            <tr key={i.insumo_id}><td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : i.critico ? 'Empaque crítico' : 'Empaque'}</span></td><td className="num">{num(i.cantidad_teorica)} {i.unidad}</td></tr>
           ))}</tbody></table>
       </section>
       <div className="barra-acciones"><span className="nota">Al iniciar se asigna el número de lote y su vencimiento.</span>
@@ -194,7 +194,7 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
   const netoSugerido = Math.round(Math.round((o.cantidad_kg * 0.98) / presentacion) * presentacion * 1000) / 1000;
   const [neto, setNeto] = useState(String(o.avance?.cantidad_real_kg ?? netoSugerido));
   const [bolsas, setBolsas] = useState(String(o.avance?.bultos ?? Math.round(leerNumero(o.avance?.cantidad_real_kg ?? netoSugerido) / presentacion)));
-  const [motivo, setMotivo] = useState(config?.motivos_pausa[0] ?? '');
+  const motivoPausa = useRef<HTMLSelectElement>(null);
   const [ocupado, setOcupado] = useState(false);
   const insumoDividir = useRef<HTMLSelectElement>(null);
 
@@ -242,12 +242,23 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
     });
   };
 
-  const pausarOReanudar = async () => {
+  const cambiarPausa = async (motivo?: string) => {
     try {
       const r = o.pausada ? await api.post<Orden>(`/ordenes/${o.id}/reanudar`) : await api.post<Orden>(`/ordenes/${o.id}/pausar`, { motivo });
       aviso(o.pausada ? 'Línea reanudada' : 'Línea pausada', 'ok');
       alCambiar({ ...r, avance: { consumos: cuerpo().consumos as FilaConsumo[], cantidad_real_kg: netoNum, bultos: Math.round(leerNumero(bolsas) || 0) } });
-    } catch (e) { error(e); }
+      return true;
+    } catch (e) { error(e); return false; }
+  };
+  /** Pausar pide el motivo en una ventana; reanudar es directo. */
+  const pausarOReanudar = () => {
+    if (o.pausada) return void cambiarPausa();
+    modal({
+      titulo: 'Pausar la línea',
+      contenido: <div className="campo"><label htmlFor="motivo">Motivo de la pausa *</label>
+        <select className="entrada" id="motivo" ref={motivoPausa}>{config?.motivos_pausa.map((m) => <option key={m}>{m}</option>)}</select></div>,
+      botones: [{ texto: 'Cancelar' }, { texto: 'Pausar línea', primario: true, alHacer: () => cambiarPausa(motivoPausa.current?.value) }],
+    });
   };
 
   const guardarAvance = async () => {
@@ -278,7 +289,8 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
 
   return (
     <>
-      {o.pausada && <div className="aviso rojo"><Icono n="pausa" /><div><b>Línea pausada · {o.motivo_pausa}</b>Reanudá la línea para seguir cargando.</div></div>}
+      {o.pausada && <div className="aviso rojo" style={{ alignItems: 'center' }}><Icono n="pausa" /><div style={{ flex: 1 }}><b>Línea pausada · {o.motivo_pausa}</b>Reanudá la línea para seguir cargando.</div>
+        <button className="btn primario" disabled={!habilitado} onClick={pausarOReanudar}><Icono n="play" /> Reanudar línea</button></div>}
       <section className="tarjeta">
         <div className="tarjeta-cab">
           <div><h2>Consumo real por lote de origen</h2><p className="sub">SIGTA sugiere las partidas por <Termino t="fefo">FEFO</Termino>. Si usaste otra, cambiala. El stock se descuenta recién al finalizar.</p></div>
@@ -293,7 +305,7 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
             const [texto, color] = validar(f);
             return (
               <tr key={`${f.insumo_id}-${i}`} data-insumo={item.codigo}>
-                <td><b>{item.nombre}</b><span className="peq">{item.codigo}{mismos.length > 1 ? ` · Partida ${mismos.indexOf(i) + 1} de ${mismos.length}` : item.tipo === 'ME' ? ' · Empaque crítico' : ''}</span></td>
+                <td><b>{item.nombre}</b><span className="peq">{item.codigo}{mismos.length > 1 ? ` · Partida ${mismos.indexOf(i) + 1} de ${mismos.length}` : item.tipo === 'ME' ? (item.critico ? ' · Empaque crítico' : ' · Empaque') : ''}</span></td>
                 <td style={{ minWidth: 230 }}>
                   <select className="entrada" aria-label={`Lote de origen de ${item.nombre}`} disabled={!editable} value={f.partida_id ?? ''} onChange={(e) => cambiarFila(i, { partida_id: Number(e.target.value) || null })}>
                     {!f.partida_id && <option value="">Elegí un lote</option>}
@@ -315,33 +327,22 @@ function VistaEjecucion({ orden: o, alCambiar }: { orden: Orden; alCambiar: (o: 
         </div>
       </section>
 
-      <div className="dos-col" style={{ gridTemplateColumns: 'minmax(0,1fr) 360px' }}>
-        <section className="tarjeta"><h2>Resultado</h2>
-          <div className="rejilla col-3" style={{ marginTop: 18 }}>
-            <div className="campo"><label htmlFor="neto">Kg netos elaborados *</label>
-              <ConUnidad unidad="kg"><input className="entrada" id="neto" inputMode="decimal" disabled={!editable} value={neto}
-                onChange={(e) => { setNeto(e.target.value); setBolsas(String(Math.round((leerNumero(e.target.value) || 0) / presentacion))); }} /></ConUnidad></div>
-            <div className="campo"><label htmlFor="bolsas">Unidades</label>
-              <ConUnidad unidad={`× ${pesoTexto(presentacion)}`}><input className="entrada" id="bolsas" inputMode="numeric" disabled={!editable} value={bolsas} onChange={(e) => setBolsas(e.target.value)} /></ConUnidad></div>
-            <div className="campo"><label><Termino t="merma">Merma</Termino></label>
-              <div className="entrada" data-testid="merma" style={{ background: 'var(--ambar-suave)', borderColor: 'var(--ambar-suave)', color: 'var(--ambar-oscuro)', fontSize: 24, fontWeight: 600, padding: '8px 14px' }}>
-                {num(mermaPct, 2)} % <small style={{ fontSize: 14, fontWeight: 600, marginLeft: 6 }}>{num(Math.max(0, mpConsumidos - netoNum), 1)} kg</small></div></div>
-          </div>
-          <p className="ayuda" style={{ marginTop: 14, color: 'var(--texto-suave)', fontSize: 13 }}>Merma = (kg consumidos − kg netos) / kg consumidos.</p>
-        </section>
-        <section className="tarjeta"><h2>Pausa de línea</h2>
-          <div className="campo" style={{ marginTop: 14 }}><label htmlFor="motivo">Motivo para pausar *</label>
-            <select className="entrada" id="motivo" disabled={o.pausada || !habilitado} value={motivo} onChange={(e) => setMotivo(e.target.value)}>
-              {config?.motivos_pausa.map((m) => <option key={m}>{m}</option>)}</select></div>
-          <div style={{ height: 12 }} />
-          <button className={`btn ${o.pausada ? 'primario' : ''}`} disabled={!habilitado} title={titulo} onClick={pausarOReanudar}>
-            <Icono n={o.pausada ? 'play' : 'pausa'} /> {o.pausada ? 'Reanudar línea' : 'Pausar línea'}</button>
-        </section>
-      </div>
+      <section className="tarjeta"><h2>Resultado</h2>
+        <div className="rejilla col-3" style={{ marginTop: 18 }}>
+          <div className="campo"><label htmlFor="neto">Kg netos elaborados *</label>
+            <ConUnidad unidad="kg"><input className="entrada" id="neto" inputMode="decimal" disabled={!editable} value={neto}
+              onChange={(e) => { setNeto(e.target.value); setBolsas(String(Math.round((leerNumero(e.target.value) || 0) / presentacion))); }} /></ConUnidad></div>
+          <div className="campo"><label htmlFor="bolsas">Unidades</label>
+            <ConUnidad unidad={`× ${pesoTexto(presentacion)}`}><input className="entrada" id="bolsas" inputMode="numeric" disabled={!editable} value={bolsas} onChange={(e) => setBolsas(e.target.value)} /></ConUnidad></div>
+          <div className="campo"><label><Termino t="merma">Merma</Termino> (kg consumidos − kg netos)</label>
+            <div className="entrada" data-testid="merma" style={{ background: 'var(--ambar-suave)', borderColor: 'var(--ambar-suave)', color: 'var(--ambar-oscuro)', fontSize: 22, fontWeight: 600, padding: '9px 14px' }}>
+              {num(mermaPct, 2)} % <small style={{ fontSize: 14, fontWeight: 600, marginLeft: 6 }}>{num(Math.max(0, mpConsumidos - netoNum), 1)} kg</small></div></div>
+        </div>
+      </section>
 
-      <div className="confirmacion"><Icono n="escudo" tam={22} /><div><b>Al finalizar, el lote queda en <Termino t="cuarentena">cuarentena</Termino></b>Se descuenta el stock de los insumos y el lote no se puede vender ni despachar hasta que Calidad lo libere.</div></div>
-      <div className="barra-acciones"><span className="nota">Podés guardar el avance y seguir después.</span>
+      <div className="barra-acciones"><span className="nota"><Icono n="escudo" tam={16} /> Al finalizar, el lote queda en <Termino t="cuarentena">cuarentena</Termino> hasta que Calidad lo libere.</span>
         <div className="botones">
+          {!o.pausada && <button className="btn" disabled={!habilitado} title={titulo} onClick={pausarOReanudar}><Icono n="pausa" /> Pausar línea</button>}
           <button className="btn" disabled={!habilitado} title={titulo} onClick={guardarAvance}><Icono n="guardar" /> Guardar avance</button>
           <button className="btn primario" disabled={!editable || ocupado} title={titulo} onClick={finalizar}><Icono n="flecha" /> Finalizar y enviar a Calidad</button>
         </div>

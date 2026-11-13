@@ -11,7 +11,11 @@ import { api } from '../lib/api';
 import { QUE_HACE } from '../lib/demo';
 import { PASOS } from '../lib/proceso';
 import type { Usuario } from '../lib/tipos';
-import { IsotipoSigta } from '../componentes/Icono';
+import { Icono, IsotipoSigta, type NombreIcono } from '../componentes/Icono';
+import type { Rol } from '../lib/tipos';
+
+const ICONO_ROL: Record<Rol, NombreIcono> = { PRODUCCION: 'ejecucion', CALIDAD: 'calidad', DEPOSITO: 'deposito', DIRECCION: 'reportes' };
+const AREA: Record<Rol, string> = { PRODUCCION: 'Producción', CALIDAD: 'Calidad', DEPOSITO: 'Depósito', DIRECCION: 'Gerencia' };
 
 export function Ingresar() {
   const { usuario, iniciar, ingresarComo } = useSesion();
@@ -23,6 +27,7 @@ export function Ingresar() {
   const [ocupado, setOcupado] = useState(false);
   const [demo, setDemo] = useState<{ clave: string; usuarios: Usuario[] } | null>(null);
   const [sinServidor, setSinServidor] = useState<string | null>(null);
+  const [entrando, setEntrando] = useState<string | null>(null);
   const volver = parametros.get('volver') || '/panel';
 
   useEffect(() => {
@@ -34,7 +39,7 @@ export function Ingresar() {
 
   const entrar = async (accion: () => Promise<unknown>) => {
     setOcupado(true);
-    try { await accion(); navegar(volver, { replace: true }); } catch (e) { error(e); setOcupado(false); }
+    try { await accion(); navegar(volver, { replace: true }); } catch (e) { error(e); setOcupado(false); setEntrando(null); }
   };
   const enviar = (e: FormEvent) => { e.preventDefault(); entrar(() => iniciar(email, clave)); };
 
@@ -42,50 +47,44 @@ export function Ingresar() {
     <div className="ingreso">
       <section className="presentacion">
         <div className="marca-grande"><IsotipoSigta claro /><b>SIGTA</b></div>
-        <h1>Sistema Integral de Gestión y Trazabilidad Alimentaria</h1>
-        <p>
-          Reemplaza los formularios en papel y las planillas de Excel de la planta: planifica la producción con las recetas,
-          controla la calidad de cada lote antes de que salga y permite saber, en segundos, de qué insumos está hecho
-          un producto y a qué cliente llegó.
-        </p>
-        <div className="pasos-intro">
-          {PASOS.map((p) => (
-            <div key={p.n}><b><i>{p.n}</i>{p.titulo}</b>{p.que.split(':')[0].replace(/\.$/, '')}.</div>
-          ))}
-        </div>
-        <div className="cliente"><LogoEmpresa alto={44} siempreClaro /><span>Desarrollado para Agrifood Argentina S.A.<br />Módulo de Producción y Trazabilidad · Demo</span></div>
+        <h1>Gestión y Trazabilidad Alimentaria</h1>
+        <p>Del pedido de producción al cliente, cada lote queda registrado: qué insumos usó, quién lo aprobó y dónde está.</p>
+        <ol className="pasos-intro">
+          {PASOS.map((p) => <li key={p.n}><i>{p.n}</i><span><b>{p.titulo}</b>{AREA[p.rol]}</span></li>)}
+        </ol>
+        <div className="cliente"><LogoEmpresa alto={40} siempreClaro /><span>Para Agrifood Argentina S.A.<br />Módulo de Producción y Trazabilidad</span></div>
       </section>
 
       <section className="formulario">
-        <div>
-          <h2>Ingresar</h2>
-          <p className="sub" style={{ color: 'var(--texto-suave)', marginTop: 4 }}>Usá tu email y contraseña de SIGTA.</p>
-        </div>
         {sinServidor && <div className="aviso rojo" role="alert"><div><b>El sistema no está disponible</b>{sinServidor}</div></div>}
-        <form onSubmit={enviar} className="rejilla" style={{ gap: 16 }}>
-          <div className="campo"><label htmlFor="email">Email</label>
-            <input id="email" className="entrada" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-          <div className="campo"><label htmlFor="clave">Contraseña</label>
-            <input id="clave" className="entrada" type="password" autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} required /></div>
-          <button className="btn primario" type="submit" disabled={ocupado}>Ingresar</button>
-        </form>
 
         {demo && (
-          <>
-            <div className="separador">o entrá con un usuario de ejemplo</div>
-            <div className="accesos">
+          <div>
+            <h2>Probar la demo</h2>
+            <p className="sub" style={{ color: 'var(--texto-suave)', marginTop: 4 }}>Elegí con qué rol entrar. Cada uno sólo puede hacer lo suyo.</p>
+            <div className="acceso-lista">
               {demo.usuarios.map((u) => (
-                <button key={u.id} className="acceso" disabled={ocupado} onClick={() => entrar(() => ingresarComo(u.email))}>
-                  <span className="avatar">{u.iniciales}</span>
-                  <span><b>{u.cargo}</b><small>{u.nombre} · {QUE_HACE[u.rol]}</small></span>
+                <button key={u.id} className="acceso" disabled={Boolean(entrando)} onClick={() => { setEntrando(u.email); entrar(() => ingresarComo(u.email)); }}>
+                  <span className={`acceso-icono ${u.rol.toLowerCase()}`}><Icono n={ICONO_ROL[u.rol]} tam={20} /></span>
+                  <span className="acceso-texto"><b>{u.cargo}</b><small>{QUE_HACE[u.rol]}</small></span>
+                  <span className="acceso-ir">{entrando === u.email ? 'Entrando…' : <Icono n="chevDer" tam={18} />}</span>
                 </button>
               ))}
             </div>
-            <p className="sub" style={{ color: 'var(--texto-suave)', fontSize: 13 }}>
-              Demo: todos los usuarios de ejemplo tienen la contraseña <b>{demo.clave}</b>. Cada uno sólo puede hacer lo que le corresponde a su rol.
-            </p>
-          </>
+          </div>
         )}
+
+        <details className="ingreso-manual" open={!demo}>
+          <summary>{demo ? 'Ingresar con email y contraseña' : 'Ingresar'}</summary>
+          <form onSubmit={enviar} className="rejilla" style={{ gap: 14, marginTop: 14 }}>
+            <div className="campo"><label htmlFor="email">Email</label>
+              <input id="email" className="entrada" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+            <div className="campo"><label htmlFor="clave">Contraseña</label>
+              <input id="clave" className="entrada" type="password" autoComplete="current-password" value={clave} onChange={(e) => setClave(e.target.value)} required /></div>
+            <button className="btn primario" type="submit" disabled={ocupado}>{ocupado && !entrando ? 'Entrando…' : 'Ingresar'}</button>
+            {demo && <p className="sub" style={{ color: 'var(--texto-suave)', fontSize: 13 }}>Usuarios de ejemplo: produccion@sigta.demo, calidad@sigta.demo, deposito@sigta.demo y gerencia@sigta.demo · contraseña <b>{demo.clave}</b></p>}
+          </form>
+        </details>
       </section>
     </div>
   );

@@ -497,10 +497,15 @@ table.tabla { width: 100%; border-collapse: collapse; }
   .menu a .quien { display: block; font-size: 11.5px; color: var(--texto-suave); font-weight: 400; }
 
   /* ---------- Guía del paso actual ("qué hago acá y qué sigue") ---------- */
-  .guia-paso { display: flex; gap: 14px; align-items: flex-start; background: var(--superficie); border: 1px solid var(--linea); border-left: 4px solid var(--marca-verde); border-radius: 10px; padding: 14px 18px; margin: -10px 0 24px; font-size: 14px; color: var(--texto-2); }
+  .guia-paso { margin: -12px 0 22px; font-size: 14px; color: var(--texto-2); }
   .guia-paso b { color: var(--texto); }
+  .guia-linea { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; padding: 0 4px; }
+  .guia-mas summary { cursor: pointer; color: var(--ambar-oscuro); font-weight: 600; list-style: none; }
+  .guia-mas summary::-webkit-details-marker { display: none; }
+  .guia-mas[open] { flex-basis: 100%; background: var(--superficie); border: 1px solid var(--linea); border-left: 4px solid var(--marca-verde); border-radius: 10px; padding: 10px 14px; }
+  .guia-mas[open] summary { margin-bottom: 4px; }
   .guia-paso .sigue { color: var(--texto-suave); margin-top: 4px; }
-  .guia-paso .otro-rol { margin-top: 8px; color: var(--azul); }
+  .guia-paso .otro-rol { margin-top: 10px; color: var(--azul); background: var(--azul-suave); border-radius: 10px; padding: 10px 14px; }
 
   /* ---------- Glosario: término con explicación al pasar el mouse ---------- */
   .termino { position: relative; border-bottom: 1px dotted currentColor; cursor: help; }
@@ -527,28 +532,39 @@ table.tabla { width: 100%; border-collapse: collapse; }
   .etiqueta .texto-gs1 { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; text-align: center; margin-top: 4px; word-break: break-all; }
 
   /* ---------- Pantalla de ingreso ---------- */
-  .ingreso { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); background: var(--fondo); }
-  .ingreso .presentacion { background: linear-gradient(160deg, #0b5f33 0%, #009448 55%, #4fa62a 100%); color: #fff; padding: 56px 64px; display: flex; flex-direction: column; gap: 28px; }
+  .ingreso { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--fondo); }
+  .ingreso .presentacion { background: linear-gradient(160deg, #0b5f33 0%, #009448 60%, #3f9b2c 100%); color: #fff; padding: 56px 64px; display: flex; flex-direction: column; gap: 22px; }
   .ingreso .presentacion .marca-grande { display: flex; align-items: center; gap: 14px; }
-  .ingreso .presentacion .marca-grande svg { width: 54px; height: 54px; }
-  .ingreso .presentacion .marca-grande b { font-size: 46px; letter-spacing: 3px; line-height: 1; }
-  .ingreso .presentacion h1 { font-size: 30px; font-weight: 600; line-height: 1.2; max-width: 560px; }
-  .ingreso .presentacion p { font-size: 17px; line-height: 1.5; color: rgba(255, 255, 255, .9); max-width: 560px; }
-  .ingreso .pasos-intro { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; max-width: 600px; }
-  .ingreso .pasos-intro div { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .22); border-radius: 12px; padding: 14px 16px; font-size: 14px; }
-  .ingreso .pasos-intro b { display: flex; align-items: center; gap: 8px; font-size: 15.5px; margin-bottom: 4px; }
-  .ingreso .pasos-intro i { font-style: normal; width: 24px; height: 24px; border-radius: 50%; background: #fff; color: #0b5f33; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+  .ingreso .presentacion .marca-grande svg { width: 52px; height: 52px; }
+  .ingreso .presentacion .marca-grande b { font-size: 44px; letter-spacing: 3px; line-height: 1; }
+  .ingreso .presentacion h1 { font-size: 30px; font-weight: 600; line-height: 1.2; max-width: 520px; margin-top: 18px; }
+  .ingreso .presentacion p { font-size: 17px; line-height: 1.5; color: rgba(255, 255, 255, .88); max-width: 500px; }
+  .ingreso .pasos-intro { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 14px; max-width: 420px; }
+  .ingreso .pasos-intro li { display: flex; align-items: center; gap: 14px; }
+  .ingreso .pasos-intro i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, .16); border: 1.5px solid rgba(255, 255, 255, .5); display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
+  .ingreso .pasos-intro b { display: block; font-size: 16px; }
+  .ingreso .pasos-intro span { font-size: 13.5px; color: rgba(255, 255, 255, .75); }
   .ingreso .cliente { margin-top: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; color: rgba(255, 255, 255, .85); }
-  .ingreso .cliente img { height: 44px; background: #fff; border-radius: 10px; padding: 6px 10px; }
-  .ingreso .formulario { padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; gap: 22px; max-width: 620px; width: 100%; margin: 0 auto; }
+  .ingreso .cliente img { background: #fff; border-radius: 10px; padding: 6px 10px; box-sizing: content-box; }
+  .ingreso .formulario { padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; gap: 26px; max-width: 560px; width: 100%; margin: 0 auto; }
   .ingreso .formulario h2 { font-size: 28px; font-weight: 600; }
-  .accesos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .acceso { display: flex; gap: 12px; align-items: flex-start; text-align: left; background: var(--superficie); border: 1px solid var(--linea); border-radius: 12px; padding: 14px; }
-  .acceso:hover { border-color: var(--ambar); background: var(--ambar-suave); }
-  .acceso b { display: block; font-size: 15px; }
-  .acceso small { display: block; color: var(--texto-suave); font-size: 12.5px; line-height: 1.3; margin-top: 2px; }
-  .separador { display: flex; align-items: center; gap: 12px; color: var(--texto-suave); font-size: 13px; }
-  .separador::before, .separador::after { content: ''; flex: 1; border-top: 1px solid var(--linea); }
+  .acceso-lista { margin-top: 18px; background: var(--superficie); border: 1px solid var(--linea); border-radius: 14px; overflow: hidden; }
+  .acceso { display: flex; gap: 14px; align-items: center; text-align: left; width: 100%; background: none; border: 0; border-bottom: 1px solid var(--linea); padding: 15px 18px; }
+  .acceso:last-child { border-bottom: 0; }
+  .acceso:hover:not(:disabled) { background: var(--superficie-2); }
+  .acceso:disabled { cursor: progress; }
+  .acceso-icono { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; flex: none; }
+  .acceso-icono.produccion { background: var(--ambar-suave); color: var(--ambar-oscuro); }
+  .acceso-icono.calidad { background: var(--azul-suave); color: var(--azul); }
+  .acceso-icono.deposito { background: var(--verde-suave); color: var(--verde); }
+  .acceso-icono.direccion { background: var(--gris-suave); color: var(--texto-2); }
+  .acceso-texto { flex: 1; min-width: 0; }
+  .acceso-texto b { display: block; font-size: 15.5px; }
+  .acceso-texto small { display: block; color: var(--texto-suave); font-size: 13px; margin-top: 1px; }
+  .acceso-ir { color: var(--texto-suave); font-size: 13px; white-space: nowrap; }
+  .ingreso-manual summary { cursor: pointer; color: var(--ambar-oscuro); font-weight: 600; font-size: 14.5px; list-style: none; }
+  .ingreso-manual summary::-webkit-details-marker { display: none; }
+  .ingreso-manual[open] summary { color: var(--texto); font-size: 18px; }
 
   /* ---------- Cómo funciona ---------- */
   .flujo { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
@@ -573,7 +589,8 @@ table.tabla { width: 100%; border-collapse: collapse; }
     .flujo { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 700px) {
-    .accesos, .ingreso .pasos-intro, .glosario, .flujo { grid-template-columns: 1fr; }
+    .glosario, .flujo { grid-template-columns: 1fr; }
+    .ingreso .pasos-intro { display: none; }
     .ingreso .presentacion h1 { font-size: 24px; }
     .ingreso .presentacion .marca-grande b { font-size: 36px; }
     .tarea { flex-wrap: wrap; }

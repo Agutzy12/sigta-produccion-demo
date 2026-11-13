@@ -40,10 +40,23 @@ export function partidasDisponibles(insumoId: number) {
     orderBy: [{ vencimiento: { sort: 'asc', nulls: 'last' } }, { ingreso: 'asc' }, { id: 'asc' }],
   });
 }
+export type Partida = Awaited<ReturnType<typeof partidasDisponibles>>[number];
+
+/** Lo mismo para varios insumos con UNA sola consulta (evita una consulta por insumo). */
+export async function partidasDisponiblesDe(insumoIds: number[]) {
+  const todas = await db().partidaInsumo.findMany({
+    where: { insumo_id: { in: insumoIds }, estado: 'LIBERADO', cantidad: { gt: 0 } },
+    orderBy: [{ vencimiento: { sort: 'asc', nulls: 'last' } }, { ingreso: 'asc' }, { id: 'asc' }],
+  });
+  const porInsumo = new Map<number, Partida[]>(insumoIds.map((id) => [id, []]));
+  for (const p of todas) porInsumo.get(p.insumo_id)?.push(p);
+  return porInsumo;
+}
 
 export async function listInsumos() {
   const lista = await stockInsumos();
-  return Promise.all(lista.map(async (i) => ({ ...i, partidas: await partidasDisponibles(i.id) })));
+  const partidas = await partidasDisponiblesDe(lista.map((i) => i.id));
+  return lista.map((i) => ({ ...i, partidas: partidas.get(i.id) ?? [] }));
 }
 
 export const listLineas = () => db().linea.findMany({ orderBy: { id: 'asc' } });

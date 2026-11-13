@@ -11,8 +11,10 @@ test.beforeAll(async ({ baseURL }) => { await reiniciarDemo(baseURL!); });
 test('la pantalla de ingreso explica qué es SIGTA y rechaza una contraseña incorrecta', async ({ page }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/ingresar/);
-  await expect(page.getByRole('heading', { name: 'Sistema Integral de Gestión y Trazabilidad Alimentaria' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Gestión y Trazabilidad Alimentaria' })).toBeVisible();
   await expect(page.getByAltText('Agrifood Argentina')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Probar la demo' })).toBeVisible();
+  await page.getByText('Ingresar con email y contraseña').click();
   await page.getByLabel('Email').fill('calidad@sigta.demo');
   await page.getByLabel('Contraseña').fill('equivocada');
   await page.getByRole('button', { name: 'Ingresar', exact: true }).click();
@@ -50,7 +52,9 @@ test('circuito completo: de la orden al stock vendible, con la trazabilidad fina
   await expect(page.getByTestId('merma')).toContainText('2,97 %'); // 1.010 kg de sémola y harina → 980 kg de Coditos
   // pausar y reanudar la línea
   await page.getByRole('button', { name: 'Pausar línea' }).click();
-  await expect(page.getByText(/Línea pausada ·/)).toBeVisible();
+  await page.getByRole('dialog').getByLabel('Motivo de la pausa *').selectOption('Limpieza de línea');
+  await page.getByRole('dialog').getByRole('button', { name: 'Pausar línea' }).click();
+  await expect(page.getByText('Línea pausada · Limpieza de línea')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Finalizar y enviar a Calidad' })).toBeDisabled();
   await page.getByRole('button', { name: 'Reanudar línea' }).click();
   await page.getByRole('button', { name: 'Finalizar y enviar a Calidad' }).click();

@@ -36,18 +36,20 @@ export function Proceso({ actual, guia = true }: { actual: 1 | 2 | 3 | 4; guia?:
       </div>
       {guia && (
         <div className="guia-paso">
-          <Icono n="info" tam={22} />
-          <div>
-            <div><b>Paso {paso.n} de 4 · {paso.titulo}</b> ({paso.cu}) · Lo registra: <b>{nombreRol(paso.rol)}</b></div>
-            <div>{paso.que}</div>
-            <div className="sigue">Después: {paso.despues}</div>
-            {!esSuTurno && usuario && (
-              <div className="otro-rol">
-                Estás como {nombreRol(usuario.rol)}: podés mirar, pero este paso lo registra {nombreRol(paso.rol)}.{' '}
-                {config?.demo && <button className="enlace" onClick={cambiar}>Cambiar a {nombreRol(paso.rol)} →</button>}
-              </div>
-            )}
+          <div className="guia-linea">
+            <span><b>Paso {paso.n} de 4 · {paso.titulo}</b> · lo registra {nombreRol(paso.rol)}</span>
+            <details className="guia-mas">
+              <summary>¿Qué hago acá?</summary>
+              <div>{paso.que}</div>
+              <div className="sigue">Después: {paso.despues}</div>
+            </details>
           </div>
+          {!esSuTurno && usuario && (
+            <div className="otro-rol">
+              <Icono n="info" tam={16} /> Estás como {nombreRol(usuario.rol)}: podés mirar, pero este paso lo registra {nombreRol(paso.rol)}.{' '}
+              {config?.demo && <button className="enlace" onClick={cambiar}>Cambiar a {nombreRol(paso.rol)} →</button>}
+            </div>
+          )}
         </div>
       )}
     </>

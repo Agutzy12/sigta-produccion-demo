@@ -7,7 +7,7 @@ import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
 import { hoyTexto, leerNumero, num, pesoTexto } from '../lib/formato';
 import type { Linea, Orden, Producto, Verificacion } from '../lib/tipos';
-import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, Termino, Vacio } from '../componentes/Comunes';
+import { Cabecera, Cargando, ConUnidad, Dato, ErrorCarga, Miga, Pill, Termino } from '../componentes/Comunes';
 import { Proceso } from '../componentes/Proceso';
 import { Icono } from '../componentes/Icono';
 
@@ -151,40 +151,40 @@ function Formulario({ productos, lineas, borrador, numero }: { productos: Produc
         </details>
       </section>
 
-      <div className="dos-col">
-        <section className="tarjeta"><h2>Insumos necesarios</h2>
-          <p className="sub">{kgPedidos > 0 ? `Calculado con la receta para ${num(kgPedidos)} kg. No cuenta el stock en cuarentena ni lo reservado por otras órdenes.` : ''}</p>
-          <div style={{ marginTop: 18 }}>
-            {!(kgPedidos > 0) ? <Vacio titulo="Falta la cantidad">Ingresá una cantidad mayor a 0 para calcular los insumos.</Vacio>
-              : !verificacion ? <Cargando /> : (<>
-                <table className="tabla">
-                  <thead><tr><th>Materia prima / empaque</th><th>Requerido</th><th>Disponible</th><th>Faltante</th><th>Estado</th></tr></thead>
-                  <tbody>{verificacion.items.map((i) => (
-                    <tr key={i.insumo_id}>
-                      <td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : i.critico ? 'Empaque crítico' : 'Empaque'}</span></td>
-                      <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(i.disponible)} {i.unidad}</td>
-                      <td className="num">{num(i.faltante)} {i.unidad}</td>
-                      <td>{i.ok ? <Pill color="verde">Suficiente</Pill> : <Pill color="rojo">Faltante</Pill>}</td>
-                    </tr>))}</tbody>
-                </table>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, fontSize: 14, gap: 12, flexWrap: 'wrap' }}>
-                  <b>Materias primas: {num(verificacion.kgMateriaPrima)} kg</b>
-                  <span style={{ color: 'var(--texto-suave)' }}>Se obtienen unas {num(unidades)} unidades de {pesoTexto(producto.presentacion_kg)} · {pallets} {pallets === 1 ? 'pallet' : 'pallets'}</span>
-                </div>
-              </>)}
+      <section className="tarjeta">
+        <div className="tarjeta-cab">
+          <div><h2>Insumos</h2>
+            <p className="sub">{kgPedidos > 0 ? `Receta para ${num(kgPedidos)} kg · se obtienen unas ${num(unidades)} unidades de ${pesoTexto(producto.presentacion_kg)} (${pallets} ${pallets === 1 ? 'pallet' : 'pallets'})` : 'Ingresá una cantidad para calcular.'}</p></div>
+          {verificacion && kgPedidos > 0 && <span><span className="fraccion" style={{ fontSize: 30 }}>{verificacion.criticosOk}/{verificacion.criticosTotal}</span> <span style={{ color: 'var(--texto-suave)' }}>disponibles</span></span>}
+        </div>
+        {!(kgPedidos > 0) ? null : !verificacion ? <Cargando /> : (<>
+          <div className={`aviso ${verificacion.planificable ? 'verde' : 'rojo'}`} style={{ marginBottom: 0 }}>
+            <Icono n={verificacion.planificable ? 'checkCirculo' : 'info'} />
+            <div><b>{verificacion.planificable ? 'Sin faltantes' : 'Hay faltantes críticos'}</b>
+              {verificacion.planificable ? 'Hay stock de todos los insumos críticos: podés planificar la orden.' : 'No se puede planificar. Guardá un borrador: se avisa a Compras automáticamente.'}</div>
           </div>
-        </section>
-        {verificacion && kgPedidos > 0 && (
-          <section className="tarjeta"><h2>Disponibilidad</h2>
-            <div style={{ margin: '14px 0' }}><span className="fraccion">{verificacion.criticosOk}/{verificacion.criticosTotal}</span> <span style={{ color: 'var(--texto-suave)' }}>insumos críticos disponibles</span></div>
-            <div className={`aviso ${verificacion.planificable ? 'verde' : 'rojo'}`} style={{ margin: '16px 0 0' }}>
-              <Icono n={verificacion.planificable ? 'check' : 'info'} />
-              <div><b>{verificacion.planificable ? 'Sin faltantes' : 'Hay faltantes críticos'}</b>
-                {verificacion.planificable ? 'Podés planificar la orden.' : 'No se puede planificar. Guardá un borrador: se avisa a Compras automáticamente.'}</div>
-            </div>
-          </section>
-        )}
-      </div>
+          {verificacion.items.some((i) => !i.ok) && (
+            <table className="tabla" style={{ marginTop: 16 }}>
+              <thead><tr><th>Insumo con faltante</th><th>Requerido</th><th>Disponible</th><th>Falta</th></tr></thead>
+              <tbody>{verificacion.items.filter((i) => !i.ok).map((i) => (
+                <tr key={i.insumo_id}><td><b>{i.nombre}</b><span className="peq">{i.critico ? 'Crítico: bloquea la planificación' : 'No crítico'}</span></td>
+                  <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(Math.max(0, i.disponible))} {i.unidad}</td>
+                  <td className="num"><Pill color="rojo">{num(i.faltante)} {i.unidad}</Pill></td></tr>))}</tbody>
+            </table>
+          )}
+          <details className="plegable"><summary>Ver los {verificacion.items.length} insumos de la receta ({num(verificacion.kgMateriaPrima)} kg de materias primas)</summary>
+            <table className="tabla">
+              <thead><tr><th>Materia prima / empaque</th><th>Requerido</th><th>Disponible</th><th></th></tr></thead>
+              <tbody>{verificacion.items.map((i) => (
+                <tr key={i.insumo_id}>
+                  <td><b>{i.nombre}</b><span className="peq">{i.codigo} · {i.tipo === 'MP' ? 'Materia prima' : 'Empaque'}</span></td>
+                  <td className="num">{num(i.requerido)} {i.unidad}</td><td className="num">{num(Math.max(0, i.disponible))} {i.unidad}</td>
+                  <td>{i.ok ? <Pill color="verde">Suficiente</Pill> : <Pill color="rojo">Faltante</Pill>}</td>
+                </tr>))}</tbody>
+            </table>
+          </details>
+        </>)}
+      </section>
 
       <div className="barra-acciones"><span className="nota">Planificar reserva los insumos pero no descuenta stock.</span>
         <div className="botones">
