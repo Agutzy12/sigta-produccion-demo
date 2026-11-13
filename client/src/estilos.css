@@ -466,7 +466,8 @@ table.tabla { width: 100%; border-collapse: collapse; }
 .tabla tbody tr { transition: background-color .12s; }
 
 /* Cambio de tema: los colores se funden */
-.cambiando-tema, .cambiando-tema * { transition: background-color .3s ease, border-color .3s ease, color .3s ease, fill .3s ease !important; }
+/* El cambio de tema es instantáneo: se cortan las transiciones para que ningún texto quede un instante sin contraste */
+.cambiando-tema, .cambiando-tema * { transition: none !important; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -536,20 +537,21 @@ table.tabla { width: 100%; border-collapse: collapse; }
 
   /* ---------- Pantalla de ingreso ---------- */
   .ingreso { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--fondo); }
-  .ingreso .presentacion { background: radial-gradient(120% 90% at 20% 0%, #0f1d14 0%, #0b0b0d 60%); color: #fff; padding: 56px 64px; display: flex; flex-direction: column; gap: 22px; }
+  .ingreso .presentacion { --pres-texto: var(--texto); --pres-2: var(--texto-2); --pres-3: var(--texto-suave); background: radial-gradient(120% 90% at 20% 0%, #dcefe1 0%, var(--superficie) 62%); border-right: 1px solid var(--linea); color: var(--pres-texto); padding: 56px 64px; display: flex; flex-direction: column; gap: 22px; }
   .ingreso .presentacion .marca-grande { display: flex; align-items: center; gap: 14px; }
   .ingreso .presentacion .marca-grande .logotipo-sigta { display: block; width: auto; max-width: 100%; }
   .ingreso .presentacion .marca-grande b { font-size: 44px; letter-spacing: 3px; line-height: 1; }
   .ingreso .presentacion h1 { font-size: 30px; font-weight: 600; line-height: 1.2; max-width: 520px; margin-top: 18px; }
-  .ingreso .presentacion p { font-size: 17px; line-height: 1.5; color: rgba(255, 255, 255, .88); max-width: 500px; }
+  .ingreso .presentacion p { font-size: 17px; line-height: 1.5; color: var(--pres-2); max-width: 500px; }
   .ingreso .pasos-intro { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 14px; max-width: 480px; }
   .ingreso .pasos-intro li { display: flex; align-items: center; gap: 14px; }
-  .ingreso .pasos-intro i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(31, 163, 74, .18); border: 1.5px solid #1fa34a; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
+  .ingreso .pasos-intro i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(31, 163, 74, .14); border: 1.5px solid #1fa34a; color: var(--pres-texto); display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
   .ingreso .pasos-intro b { display: block; font-size: 16px; }
-  .ingreso .pasos-intro em { font-style: normal; font-weight: 400; color: rgba(255, 255, 255, .6); font-size: 14px; }
+  .ingreso .pasos-intro em { font-style: normal; font-weight: 400; color: var(--pres-3); font-size: 14px; }
   .ingreso .pasos-intro li { align-items: flex-start; }
-  .ingreso .pasos-intro span { font-size: 13.5px; color: rgba(255, 255, 255, .75); }
-  .ingreso .cliente { margin-top: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; color: rgba(255, 255, 255, .85); }
+  .ingreso .pasos-intro span { font-size: 13.5px; color: var(--pres-2); }
+  .ingreso .cliente { margin-top: auto; display: flex; align-items: center; gap: 14px; font-size: 13px; color: var(--pres-2); }
+  :root[data-tema="oscuro"] .ingreso .presentacion { background: radial-gradient(120% 90% at 20% 0%, #0f1d14 0%, #0b0b0d 60%); border-right-color: transparent; }
   .ingreso .cliente img { background: #fff; border-radius: 10px; padding: 6px 10px; box-sizing: content-box; }
   .ingreso .formulario { padding: 56px 64px; display: flex; flex-direction: column; justify-content: center; gap: 26px; max-width: 560px; width: 100%; margin: 0 auto; }
   .ingreso .formulario h2 { font-size: 28px; font-weight: 600; }

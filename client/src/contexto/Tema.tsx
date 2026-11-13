@@ -14,10 +14,13 @@ export function ProveedorTema({ children }: { children: ReactNode }) {
     setTema((actual) => {
       const nuevo: Tema = actual === 'oscuro' ? 'claro' : 'oscuro';
       try { localStorage.setItem('sigta_tema', nuevo); } catch { /* sin almacenamiento */ }
+      // Se aplica en el mismo clic (sin esperar a React) y sin transiciones: todo cambia de color a la vez
+      const raiz = document.documentElement;
+      raiz.classList.add('cambiando-tema');
+      raiz.dataset.tema = nuevo;
+      requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('cambiando-tema')));
       return nuevo;
     });
-    document.documentElement.classList.add('cambiando-tema');
-    setTimeout(() => document.documentElement.classList.remove('cambiando-tema'), 450);
   }, []);
   const valor = useMemo(() => ({ tema, cambiarTema }), [tema, cambiarTema]);
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
