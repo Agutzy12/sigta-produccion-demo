@@ -11,7 +11,8 @@ import { api } from '../lib/api';
 import { QUE_HACE } from '../lib/demo';
 import { PASOS } from '../lib/proceso';
 import type { Usuario } from '../lib/tipos';
-import { Icono, LogotipoSigta } from '../componentes/Icono';
+import { Icono } from '../componentes/Icono';
+import { IntroLogo } from '../componentes/IntroLogo';
 import { FotoRol } from '../componentes/Rol';
 import type { Rol } from '../lib/tipos';
 
@@ -50,7 +51,7 @@ export function Ingresar() {
         aria-label={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} title={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
         <Icono n={tema === 'oscuro' ? 'sol' : 'luna'} /></button>
       <section className="presentacion">
-        <div className="marca-grande"><LogotipoSigta alto={150} /></div>
+        <div className="marca-grande"><IntroLogo alto={150} /></div>
         <h1>Sistema Integral de Gestión y Trazabilidad Alimentaria</h1>
         <p>Reemplaza los formularios en papel y las planillas de la planta: planifica la producción con las recetas, controla la calidad de cada lote antes de que salga y permite saber en segundos de qué insumos está hecho un producto y a qué cliente llegó.</p>
         <ol className="pasos-intro">
