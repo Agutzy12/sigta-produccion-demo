@@ -536,7 +536,7 @@ table.tabla { width: 100%; border-collapse: collapse; }
 
   /* ---------- Pantalla de ingreso ---------- */
   .ingreso { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); background: var(--fondo); }
-  .ingreso .presentacion { background: radial-gradient(120% 90% at 20% 0%, #24161a 0%, #0b0b0d 60%); color: #fff; padding: 56px 64px; display: flex; flex-direction: column; gap: 22px; }
+  .ingreso .presentacion { background: radial-gradient(120% 90% at 20% 0%, #0f1d14 0%, #0b0b0d 60%); color: #fff; padding: 56px 64px; display: flex; flex-direction: column; gap: 22px; }
   .ingreso .presentacion .marca-grande { display: flex; align-items: center; gap: 14px; }
   .ingreso .presentacion .marca-grande .logotipo-sigta { display: block; width: auto; max-width: 100%; }
   .ingreso .presentacion .marca-grande b { font-size: 44px; letter-spacing: 3px; line-height: 1; }
@@ -544,7 +544,7 @@ table.tabla { width: 100%; border-collapse: collapse; }
   .ingreso .presentacion p { font-size: 17px; line-height: 1.5; color: rgba(255, 255, 255, .88); max-width: 500px; }
   .ingreso .pasos-intro { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 14px; max-width: 480px; }
   .ingreso .pasos-intro li { display: flex; align-items: center; gap: 14px; }
-  .ingreso .pasos-intro i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(200, 16, 46, .18); border: 1.5px solid #c8102e; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
+  .ingreso .pasos-intro i { font-style: normal; width: 30px; height: 30px; border-radius: 50%; background: rgba(31, 163, 74, .18); border: 1.5px solid #1fa34a; display: grid; place-items: center; font-size: 14px; font-weight: 700; flex: none; }
   .ingreso .pasos-intro b { display: block; font-size: 16px; }
   .ingreso .pasos-intro em { font-style: normal; font-weight: 400; color: rgba(255, 255, 255, .6); font-size: 14px; }
   .ingreso .pasos-intro li { align-items: flex-start; }
@@ -700,7 +700,7 @@ table.tabla { width: 100%; border-collapse: collapse; }
 
 
   .marca a.sigta-titulo { color: inherit; border-radius: 10px; }
-  .marca a.sigta-titulo:hover b { color: #c8102e; }
+  .marca a.sigta-titulo:hover b { color: #1fa34a; }
   .guia-item { display: block; margin-top: 4px; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--texto); font-weight: 600; }
   .pasos-v li.hecho.activo .num { background: var(--marca-verde); color: #fff; box-shadow: 0 0 0 4px var(--verde-suave); }
 
@@ -738,4 +738,6 @@ table.tabla { width: 100%; border-collapse: collapse; }
     .banner .cabecera h1 { font-size: 24px; }
   }
   .titulo-seccion { font-size: 20px; font-weight: 600; margin: 6px 0 12px; }
+  .ingreso { position: relative; }
+  .ingreso-tema { position: absolute; top: 18px; right: 18px; z-index: 5; background: var(--superficie); }
 }

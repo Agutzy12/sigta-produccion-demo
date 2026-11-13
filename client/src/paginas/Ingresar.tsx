@@ -6,7 +6,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useSesion } from '../contexto/Sesion';
 import { useDialogos } from '../contexto/Dialogos';
-import { LogoEmpresa } from '../contexto/Tema';
+import { LogoEmpresa, useTema } from '../contexto/Tema';
 import { api } from '../lib/api';
 import { QUE_HACE } from '../lib/demo';
 import { PASOS } from '../lib/proceso';
@@ -20,6 +20,7 @@ const AREA: Record<Rol, string> = { PRODUCCION: 'Producción', CALIDAD: 'Calidad
 export function Ingresar() {
   const { usuario, iniciar, ingresarComo } = useSesion();
   const { error } = useDialogos();
+  const { tema, cambiarTema } = useTema();
   const navegar = useNavigate();
   const [parametros] = useSearchParams();
   const [email, setEmail] = useState('');
@@ -45,6 +46,9 @@ export function Ingresar() {
 
   return (
     <div className="ingreso">
+      <button className="btn-icono ingreso-tema" type="button" onClick={cambiarTema}
+        aria-label={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'} title={tema === 'oscuro' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}>
+        <Icono n={tema === 'oscuro' ? 'sol' : 'luna'} /></button>
       <section className="presentacion">
         <div className="marca-grande"><LogotipoSigta alto={150} /></div>
         <h1>Sistema Integral de Gestión y Trazabilidad Alimentaria</h1>
