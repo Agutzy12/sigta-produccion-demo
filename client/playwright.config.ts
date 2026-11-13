@@ -18,7 +18,8 @@ export default defineConfig({
     trace: 'off',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 1400, height: 900 } } }],
-  webServer: {
+  // Con E2E_URL se prueba un servidor ya publicado (por ejemplo, la dirección de Vercel); si no, se levanta el local.
+  webServer: process.env.E2E_URL ? undefined : {
     command: 'npm --prefix .. run start',
     url: 'http://localhost:3000/api/salud',
     reuseExistingServer: true,
